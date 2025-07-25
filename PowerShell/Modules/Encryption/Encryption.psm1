@@ -1,46 +1,72 @@
+Import-Module Logging
+
 function Get-PasswordFromFile {
     param (
+        [Parameter(Mandatory = $true)]
+        [string] $LogPath,
+
         [String]$PassFile = "password.txt"
     )
 
-    if (-Not (Test-Path -Type Leaf $PassFile)) {
-        Write-Host "$PassFile password file does not exist."
+    $passwordPtr = $null 
+
+    try {
+        if (-Not (Test-Path -Type Leaf $PassFile)) {
+            Write-LogMessage -LogPath $LogPath -Message "$PassFile password file does not exist." -Level 3
+            return $null
+        }
+
+        if ((Get-Item $PassFile).Length -gt 0) {
+            $password = (Get-Content -Path $PassFile | ConvertTo-SecureString)
+            $passwordPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
+            return [Runtime.InteropServices.Marshal]::PtrToStringAuto($passwordPtr)
+        }
+
+        Write-LogMessage -LogPath $LogPath -Message "Password file is empty." -Level 3
         return $null
     }
-
-    if ((Get-Item $PassFile).Length -gt 0) {
-        $SecurePassword = (Get-Content -Path $PassFile | ConvertTo-SecureString)
-        return [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword))
-    
+    catch {
+        Write-LogMessage -LogPath $LogPath -Message "Error while decoding password from ${PassFile}:" -Level 1
+        Write-LogException -LogPath $LogPath -Exception $_
     }
-
-    Write-Host "Password file is empty."
-    return $null
+    finally {
+        if ($null -ne $passwordPtr) {
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPtr)
+        }
+    }
 }
 
 function Read-PasswordFromInput {
-    $password = Read-Host "Enter a password" -AsSecureString
-    $confirmPassword = Read-Host "Confirm your password" -AsSecureString
+    $passwordPtr = $null
+    $confirmPasswordPtr = $null
 
-    $passwordText = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($password))
-    $confirmPasswordText = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($confirmPassword))
+    try {
+        $password = Read-Host "Enter a password" -AsSecureString
+        $confirmPassword = Read-Host "Confirm your password" -AsSecureString
 
-    $result = $passwordText -eq $confirmPasswordText
-    $exitWithFailure = $false
-    if (-Not $result) {
-        Write-Error "Passwords don't match. Try again"
-        $exitWithFailure = $true
+        $passwordPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
+        $confirmPasswordPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($confirmPassword)
+
+        $passwordPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto($passwordPtr)
+        $confirmPasswordPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto($confirmPasswordPtr)
+
+        $result = $passwordPlain -eq $confirmPasswordPlain
+        if (-Not $result) {
+            Write-Error "Passwords don't match. Try again"
+            return $null
+        }
+
+        return $password
     }
+    finally {
+        if ($null -ne $passwordPtr) {
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPtr)
+        }
 
-    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password))
-    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($confirmPassword))
-
-    if ($exitWithFailure) {
-        Exit 1
+        if ($null -ne $passwordPtr) {
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPtr)
+        }
     }
-
-    if ($result) { return $password }
-    return $null
 }
 
 Export-ModuleMember -Function Get-PasswordFromFile, Read-PasswordFromInput

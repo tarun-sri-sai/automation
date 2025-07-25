@@ -54,4 +54,19 @@ function Invoke-LoggedExpression {
     }
 }
 
-Export-ModuleMember -Function Write-LogMessage, Invoke-LoggedExpression
+function Write-LogException {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$LogPath,
+
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.ErrorRecord]$Exception
+    )
+
+    Write-LogMessage -LogPath $LogPath -Message "Error Type: $($Exception.GetType().FullName)"
+    Write-LogMessage -LogPath $LogPath -Message "Error Message: $($Exception.Exception.Message)"
+    Write-LogMessage -LogPath $LogPath -Message "Exception .NET StackTrace:`n$($Exception.Exception.StackTrace)"
+    Write-LogMessage -LogPath $LogPath -Message "PowerShell ScriptStackTrace:`n$($Exception.ScriptStackTrace)"
+}
+
+Export-ModuleMember -Function Write-LogMessage, Invoke-LoggedExpression, Write-LogException

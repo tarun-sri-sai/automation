@@ -1,5 +1,4 @@
-$thisDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
-Import-Module (Join-Path "$thisDirectory" "Logging.psm1")
+Import-Module Logging
 
 function Stop-Processes {
     param (
@@ -25,6 +24,7 @@ function Stop-Processes {
     }
     catch {
         Write-LogMessage -LogPath $logPath -Message "An error occurred while stopping ${name}: $_." -Level 1
+        Write-LogException -LogPath $LogPath -Exception $_
         exit 1
     }
 }
