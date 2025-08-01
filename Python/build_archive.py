@@ -1,3 +1,4 @@
+import sys
 from argparse import ArgumentParser, Namespace
 from typing import Any
 from os.path import isdir, join, basename
@@ -5,7 +6,6 @@ from os import makedirs, remove
 from shutil import rmtree
 from zipfile import ZipFile, ZIP_LZMA
 from time import perf_counter_ns, time
-import sys
 
 
 class InputParser:

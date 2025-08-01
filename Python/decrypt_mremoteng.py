@@ -3,8 +3,8 @@ import os
 import base64
 import hashlib
 import xml.etree.ElementTree as ET
-from Crypto.Cipher import AES
 from traceback import print_exc
+from Crypto.Cipher import AES
 
 
 def decrypt_password(encrypted_password, encryption_key="mR3m"):

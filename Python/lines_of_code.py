@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from os import listdir
-from os.path import join, isdir, splitext
 from re import fullmatch
+from os.path import join, isdir, splitext
 
 
 class LinesOfCode:

@@ -1,9 +1,9 @@
-from argparse import ArgumentParser
-from pprint import pprint
-from typing import Any
 import os
 import json
 import sys
+from argparse import ArgumentParser
+from pprint import pprint
+from typing import Any
 
 
 def parse_arguments() -> tuple[dict[str, Any], ArgumentParser]:
