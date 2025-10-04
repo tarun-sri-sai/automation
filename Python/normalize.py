@@ -31,8 +31,9 @@ def normalize(parent, dry_run):
                     print(f"Renaming {conversion_path}")
                     shutil.move(item_path, new_path)
 
-            if os.path.isdir(new_path):
-                normalize(new_path, dry_run)
+            next_path = item_path if dry_run else new_path
+            if os.path.isdir(next_path):
+                normalize(next_path, dry_run)
         except Exception as e:
             print(f"Failed to normalize {item_path}: {e}")
 
