@@ -64,7 +64,7 @@ def discover_git_repos(log: UpdateGitReposLogger,
     }
 
     try:
-        bearer_token = os.environ.get("MY_GITHUB_TOKEN")
+        bearer_token = os.environ.get("GITHUB_TOKEN")
         if bearer_token:
             log.info("Using bearer token from environment.")
             headers["Authorization"] = f"Bearer {bearer_token}"
