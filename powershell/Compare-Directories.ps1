@@ -9,55 +9,50 @@ param(
 $cwd = (Get-Location).Path
 
 Set-Location $Path1
-$files1 = Get-ChildItem -Recurse -File | ForEach-Object { 
-    [PSCustomObject]@{
-        AbsolutePath = $_.FullName;
-        RelativePath = Resolve-Path -Relative -Path $_.FullName
-    }
+$files1 = Get-ChildItem -Recurse -File -FollowSymlink | ForEach-Object { 
+    Resolve-Path -Relative -Path $_.FullName
 }
 Set-Location $cwd
 
 Set-Location $Path2
-$files2 = Get-ChildItem -Recurse -File | ForEach-Object { 
-    [PSCustomObject]@{
-        AbsolutePath = $_.FullName;
-        RelativePath = Resolve-Path -Relative -Path $_.FullName
-    }
+$files2 = Get-ChildItem -Recurse -File -FollowSymlink | ForEach-Object { 
+    Resolve-Path -Relative -Path $_.FullName
 }
 Set-Location $cwd
 
-$commonFiles = $files1 | Where-Object { $_.RelativePath -in $files2.RelativePath }
-
-$diff1 = $files1 | Where-Object { $_.RelativePath -notin $commonFiles.RelativePath }
-$diff2 = $files2 | Where-Object { $_.RelativePath -notin $commonFiles.RelativePath }
-
-if ($diff1) {
-    Write-Output "Files only in ${Path1}:"
-    $diff1 | ForEach-Object { Write-Output $_.RelativePath }
-    Write-Output ""
+$files2Set = [System.Collections.Generic.HashSet[string]]::new()
+foreach ($file in $files2) {
+    $files2Set.Add($file) | Out-Null
 }
 
-if ($diff2) {
-    Write-Output "Files only in ${Path2}:"
-    $diff2 | ForEach-Object { Write-Output $_.RelativePath }
-    Write-Output ""
-}
-
-$differentContent = @()
-foreach ($file in $commonFiles) {
-    $file1 = $file.AbsolutePath
-    $file2 = ($files2 | Where-Object { $_.RelativePath -eq $file.RelativePath }).AbsolutePath
-
-    $hash1 = Get-FileHash -Path $file1 -Algorithm SHA256
-    $hash2 = Get-FileHash -Path $file2 -Algorithm SHA256
-
-    if ($hash1.Hash -ne $hash2.Hash) {
-        $differentContent += $file.RelativePath
+$commonFiles = [System.Collections.Generic.HashSet[string]]::new()
+foreach ($file in $files1) {
+    if ($file -in $files2Set) {
+        $commonFiles.Add($file) | Out-Null
     }
 }
 
-if ($differentContent) {
-    Write-Output "Files with different content:"
-    $differentContent | ForEach-Object { Write-Output $_ }
-    Write-Output ""
+$minusFiles = @($files1 | Where-Object { $_ -notin $commonFiles })
+$plusFiles = @($files2 | Where-Object { $_ -notin $commonFiles })
+
+$differentContent = @()
+foreach ($file in $commonFiles) {
+    $file1 = Join-Path -Path (Get-Item $Path1).FullName -ChildPath $file
+    $hash1 = Get-FileHash -Path $file1 -Algorithm MD5
+
+    $file2 = Join-Path -Path (Get-Item $Path2).FullName -ChildPath $file
+    $hash2 = Get-FileHash -Path $file2 -Algorithm MD5
+
+    if ($hash1.Hash -ne $hash2.Hash) {
+        $differentContent += $file
+    }
 }
+
+if ($differentContent.Count -gt 0) {
+    $differentContent | ForEach-Object { 
+        $minusFiles += $_
+        $plusFiles += $_
+    }
+}
+
+return @($minusFiles | Sort-Object | ForEach-Object { "- $_" }) + @($plusFiles | Sort-Object | ForEach-Object { "+ $_" }) 
