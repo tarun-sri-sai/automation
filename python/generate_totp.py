@@ -5,10 +5,15 @@ from argparse import ArgumentParser
 from tabulate import tabulate
 from getpass import getpass
 from urllib.parse import urlparse, parse_qs, unquote
-from lib.encryption import decrypt
+from pgpy import PGPMessage
 
 # For warnings from cryptography
 warnings.filterwarnings('ignore')
+
+
+def decrypt(encrypted_blob: bytes, password: str) -> bytes:
+    message = PGPMessage.from_blob(encrypted_blob)
+    return message.decrypt(password).message
 
 
 def parse_otpauth_url(otpauth_url):
