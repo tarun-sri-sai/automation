@@ -71,8 +71,11 @@ def find_content_info(html_content: str, text_pattern: str) -> list[str]:
         parser.exit_on_error('Bad text_pattern')
 
 
-def calculate_hours(content_types: list[str], split_pattern: str, 
-                    multipliers: dict) -> float:
+def calculate_hours(
+    content_types: list[str],
+    split_pattern: str,
+        multipliers: dict
+) -> float:
 
     total_hours = 0
 
@@ -115,7 +118,7 @@ def to_multipliers_dict(multipliers_json: str) -> dict:
         parsed_dict = loads(multipliers_json)
     except ValueError:
         parser.exit_on_error('Bad multipliers_file content')
-    
+
     try:
         return {x: arithmetic_eval(y)
                 for x, y in parsed_dict.items()}
@@ -138,8 +141,11 @@ def get_watch_time(md_text: str, text_pattern: str, split_pattern: str,
         multipliers = open(multipliers_file, 'r').read()
 
     content_info = find_content_info(to_html(md_text), text_pattern)
-    hours = calculate_hours(content_info, split_pattern, 
-                            to_multipliers_dict(multipliers))
+    hours = calculate_hours(
+        content_info,
+        split_pattern,
+        to_multipliers_dict(multipliers)
+    )
 
     return format_hours(hours)
 

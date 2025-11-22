@@ -38,7 +38,10 @@ def main():
 
     for commit in commits:
         run_command(f"git restore --source={commit} --worktree .", src_repo)
-        commit_message = run_command(f"git log -1 --pretty=%B {commit}", src_repo)
+        commit_message = run_command(
+            f"git log -1 --pretty=%B {commit}",
+            src_repo
+        )
 
         for item in os.listdir(src_repo):
             if item == ".git":

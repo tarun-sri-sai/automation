@@ -13,19 +13,25 @@ def decrypt_password(encrypted_password, encryption_key="mR3m"):
 
     try:
         encrypted_data = base64.b64decode(encrypted_password)
-        
+
         salt = encrypted_data[:16]
         associated_data = encrypted_data[:16]
         nonce = encrypted_data[16:32]
         ciphertext = encrypted_data[32:-16]
         tag = encrypted_data[-16:]
-        
-        key = hashlib.pbkdf2_hmac("sha1", encryption_key.encode(), salt, 1000, dklen=32)
-        
+
+        key = hashlib.pbkdf2_hmac(
+            "sha1", 
+            encryption_key.encode(), 
+            salt, 
+            1000, 
+            dklen=32
+        )
+
         cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
         cipher.update(associated_data)
         plaintext = cipher.decrypt_and_verify(ciphertext, tag)
-        
+
         return plaintext.decode("utf-8")
     except Exception:
         print_exc()

@@ -6,7 +6,11 @@ from argparse import ArgumentParser
 
 def convert_to_cap_snake_case(source_string):
     word_matches = re.findall(r'[a-zA-Z0-9]+', source_string)
-    capitalized = [w.capitalize() if w != w.upper() else w for w in word_matches]
+    capitalized = [
+        w.capitalize()
+        if w != w.upper() else w
+        for w in word_matches
+    ]
     return "_".join(capitalized)
 
 
@@ -47,8 +51,8 @@ def main():
         help="Directory to be recursively normalized"
     )
     parser.add_argument(
-        "-n", 
-        "--dry-run", 
+        "-n",
+        "--dry-run",
         help="Prints what would be renamed without renaming",
         dest="dry_run",
         action="store_true"
