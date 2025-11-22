@@ -2,6 +2,7 @@ import pandas as pd
 import requests_cache
 from argparse import ArgumentParser
 from bs4 import BeautifulSoup
+from sklearn.preprocessing import minmax_scale
 
 session = requests_cache.CachedSession(
     'web_cache',
@@ -72,9 +73,12 @@ def main():
         df[col + "Seconds"] = df[col].apply(convert_duration)
         df = df.drop(columns=[col])
 
-    sort_order = ["appLaunchCount", "totalTimeUsedSeconds"]
+    df["weightedScore"] = (
+        minmax_scale(df["appLaunchCount"]) * 0.5 +
+        minmax_scale(df["totalTimeUsedSeconds"]) * 0.5
+    )
 
-    top_df = df.sort_values(by=sort_order, ascending=False).head(n=args.top_n)
+    top_df = df.sort_values(by=["weightedScore"], ascending=False).head(n=args.top_n)
     top_df["app"] = top_df["package"].apply(scrape_app_name)
 
     top_df[["package", "app"]].to_csv(
