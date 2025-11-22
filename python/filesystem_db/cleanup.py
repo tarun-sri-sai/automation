@@ -2,7 +2,6 @@ import os
 import sys
 import sqlite3
 from argparse import ArgumentParser
-import sys
 
 CHUNK_SIZE = 10000
 sys.stdout.reconfigure(encoding='utf-8')
