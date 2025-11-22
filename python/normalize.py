@@ -4,13 +4,9 @@ import shutil
 from argparse import ArgumentParser
 
 
-def convert_to_cap_snake_case(source_string):
+def convert_to_snake_case(source_string):
     word_matches = re.findall(r'[a-zA-Z0-9]+', source_string)
-    capitalized = [
-        w.capitalize()
-        if w != w.upper() else w
-        for w in word_matches
-    ]
+    capitalized = [w.lower() for w in word_matches]
     return "_".join(capitalized)
 
 
@@ -20,10 +16,10 @@ def normalize(parent, dry_run):
         try:
             if os.path.isfile(item_path):
                 base_name, exts = item.split(".", 1)
-                new_base_name = convert_to_cap_snake_case(base_name)
+                new_base_name = convert_to_snake_case(base_name)
                 new_name = f"{new_base_name}.{exts}"
             else:
-                new_name = convert_to_cap_snake_case(item)
+                new_name = convert_to_snake_case(item)
             new_path = os.path.join(parent, new_name)
 
             if new_path != item_path:
@@ -44,7 +40,7 @@ def normalize(parent, dry_run):
 
 def main():
     parser = ArgumentParser(
-        description="Normalizes files and directories recursively to Capitalized_Snake_Case"
+        description="Normalizes files and directories recursively to snake_case"
     )
     parser.add_argument(
         "directory",
