@@ -3,8 +3,8 @@ import os
 import base64
 import hashlib
 import xml.etree.ElementTree as ET
-from traceback import print_exc
 from Crypto.Cipher import AES
+from traceback import print_exc
 
 
 def decrypt_password(encrypted_password, encryption_key="mR3m"):
@@ -21,10 +21,10 @@ def decrypt_password(encrypted_password, encryption_key="mR3m"):
         tag = encrypted_data[-16:]
 
         key = hashlib.pbkdf2_hmac(
-            "sha1", 
-            encryption_key.encode(), 
-            salt, 
-            1000, 
+            "sha1",
+            encryption_key.encode(),
+            salt,
+            1000,
             dklen=32
         )
 
