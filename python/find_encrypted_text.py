@@ -4,7 +4,7 @@ import sys
 import re
 from pathlib import Path
 from getpass import getpass
-from lib.encryption import decrypt
+from pgpy import PGPMessage
 
 
 def find_files(directory, extension, recursive):
@@ -18,7 +18,7 @@ def find_files(directory, extension, recursive):
 def decrypt_file(file_path, password):
     try:
         with open(file_path, 'r') as f:
-            return decrypt(f.read(), password)
+            return PGPMessage.from_blob(f.read()).decrypt(password).message
     except Exception as e:
         print(f"Error decrypting {file_path}: {e}", file=sys.stderr)
         return None
