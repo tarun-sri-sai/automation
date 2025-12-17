@@ -1,12 +1,15 @@
 param (
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$Subnet = "192.168.0.0/24",
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$ThrottleLimit = 100,
 
-    [Parameter(Mandatory=$false)]
-    [int]$Count = 1
+    [Parameter(Mandatory = $false)]
+    [int]$Count = 1,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$Unreachable
 )
 
 function ConvertTo-IPRange {
@@ -49,10 +52,10 @@ function ConvertTo-IPRange {
     }
     
     return @{
-        StartIP = $startIP
-        IPCount = $ipCount
-        SkipFirst = $skipFirst
-        SkipLast = $skipLast
+        StartIP    = $startIP
+        IPCount    = $ipCount
+        SkipFirst  = $skipFirst
+        SkipLast   = $skipLast
         MaskLength = $maskLength
     }
 }
@@ -88,6 +91,16 @@ function ConvertTo-DottedDecimalIP {
     $o4 = $ipValue % 256
     
     return "$o1.$o2.$o3.$o4"
+}
+
+function Get-NaturalSortKey {
+    param($s)
+    
+    return (
+        $s -split '(\d+)' | ForEach-Object {
+            if ($_ -match '^\d+$') { '{0:D10}' -f [int]$_ } else { $_ }
+        }
+    ) -join ''
 }
 
 if ($Subnet -notmatch "/\d{1,2}$") {
@@ -127,8 +140,8 @@ try {
         $handle = $powerShell.BeginInvoke()
         $runspace = [PSCustomObject]@{
             PowerShell = $powerShell
-            Handle = $handle
-            IP = $currentIP
+            Handle     = $handle
+            IP         = $currentIP
         }
         [void]$runspaces.Add($runspace)
         
@@ -169,9 +182,28 @@ try {
     $runspacePool.Dispose()
     
     Write-Progress -Activity "Scanning IP addresses" -Completed
-    
-    Write-Host "Found $($reachableIPs.Count) reachable IP addresses."
-    return $reachableIPs.ToArray() | Sort-Object
+
+    $allIPs = New-Object System.Collections.Generic.List[string]
+    for ($i = $range.SkipFirst; $i -lt ($totalIPs + 1 - $range.SkipLast); $i++) {
+        $allIPs.Add((ConvertTo-DottedDecimalIP -StartIP $startIP -Offset $i)) | Out-Null
+    }
+
+    if ($Unreachable) {
+        $reachableSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+        foreach ($rip in $reachableIPs) { [void]$reachableSet.Add($rip) }
+
+        $unreachableIPs = New-Object System.Collections.Generic.List[string]
+        foreach ($ip in $allIPs) {
+            if (-not $reachableSet.Contains($ip)) { $unreachableIPs.Add($ip) | Out-Null }
+        }
+
+        Write-Host "Found $($unreachableIPs.Count) unreachable IP addresses."
+        return $unreachableIPs | Sort-Object { Get-NaturalSortKey $_ }
+    }
+    else {
+        Write-Host "Found $($reachableIPs.Count) reachable IP addresses."
+        return $reachableIPs.ToArray() | Sort-Object { Get-NaturalSortKey $_ }
+    }
 } 
 catch {
     Write-Error "Error scanning subnet: $_"
