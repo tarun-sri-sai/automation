@@ -9,13 +9,22 @@ function Write-LogMessage {
         [int]$Level = 4
     )
 
-    $LoggingLevels = @("CRITICAL", "ERROR", "WARN", "INFO", "DEBUG")
-    if (($Level -lt 1) -or ($Level -gt $LoggingLevels.Length)) {
+    $maxSize = 5MB
+    if (Test-Path $LogPath) {
+        $size = (Get-Item $LogPath).Length
+        if ($size -ge $maxSize) {
+            Move-Item $LogPath "$LogPath.1" -Force # keep only one version for now
+            Remove-Item $LogPath -Force
+        }
+    }
+
+    $loggingLevels = @("CRITICAL", "ERROR", "WARN", "INFO", "DEBUG")
+    if (($Level -lt 1) -or ($Level -gt $loggingLevels.Length)) {
         $Level = 4  # Default to INFO if wrong level is provided
     }
 
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $prefix = "${timestamp} - $($LoggingLevels[$Level - 1])"
+    $prefix = "${timestamp} - $($loggingLevels[$Level - 1])"
 
     $logLine = "${prefix}`t${Message}"
 
