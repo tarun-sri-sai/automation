@@ -1,82 +1,75 @@
+import msal
+import hashlib
 from argparse import ArgumentParser
 from getpass import getpass
-from office365.runtime.auth.authentication_context import AuthenticationContext
-from office365.runtime.http.request_options import RequestOptions
-from cryptography.hazmat.primitives.serialization import (
-    pkcs12,
-    Encoding,
-    PrivateFormat,
-    NoEncryption
-)
-from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_certificates
 
 
-def convert_pfx_to_pri_key(pfx_path, password):
-    with open(pfx_path, 'rb') as f:
+def get_access_token(client_id, tenant_id, cert_path, cert_password, scope=None):
+    scope = scope or "https://graph.microsoft.com/.default"
+
+    with open(cert_path, "rb") as f:
         pfx_data = f.read()
 
-    private_key, _, _ = pkcs12.load_key_and_certificates(
-        pfx_data, password.encode(), backend=default_backend()
+    private_key, cert, additional_certs = load_key_and_certificates(
+        pfx_data,
+        cert_password.encode()
     )
 
-    return private_key.private_bytes(Encoding.PEM,
-                                     PrivateFormat.TraditionalOpenSSL,
-                                     NoEncryption())
+    private_key_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    ).decode("utf-8")
 
+    pub_key = cert.public_bytes(
+        serialization.Encoding.DER
+    )
+    thumbprint = hashlib.sha1(
+        pub_key
+    ).hexdigest()
 
-def get_credential(client_id, tenant_id, certificate_file, thumbprint,
-                   certificate_password):
-    private_key = convert_pfx_to_pri_key(
-        certificate_file,
-        certificate_password
+    app = msal.ConfidentialClientApplication(
+        client_id=client_id,
+        authority=f"https://login.microsoftonline.com/{tenant_id}",
+        client_credential={
+            "private_key": private_key_pem,
+            "thumbprint": thumbprint,
+        },
     )
 
-    return {
-        "tenant": tenant_id,
-        "client_id": client_id,
-        "thumbprint": thumbprint,
-        "private_key": private_key,
-    }
+    result = app.acquire_token_for_client(scopes=[scope])
+
+    if "access_token" in result:
+        return result["access_token"]
+    else:
+        raise ValueError(
+            f"Failed to obtain token: {result.get('error_description', result)}"
+        )
 
 
 def main():
     parser = ArgumentParser(description="Test azure certificate")
     parser.add_argument("client_id", help="Azure app ID")
     parser.add_argument("tenant_id", help="Directory ID")
-    parser.add_argument("certificate_file",
-                        help="Path to the cert private key")
-    parser.add_argument("thumbprint", help="Certificate thumbprint")
-    parser.add_argument("site_url", help="Site URL")
+    parser.add_argument("cert_file",
+                        help="Path to the certificate private key")
 
     args = parser.parse_args()
 
     cert_password = getpass(prompt="Enter the password to the private key: ")
 
     try:
-        credential = get_credential(client_id=args.client_id,
-                                    tenant_id=args.tenant_id,
-                                    certificate_file=args.certificate_file,
-                                    thumbprint=args.thumbprint,
-                                    certificate_password=cert_password)
-
-        auth_context = AuthenticationContext(args.site_url)
-        auth_context.with_client_certificate(
-            tenant=args.tenant_id,
-            client_id=args.client_id,
-            private_key=credential.get("private_key"),
-            thumbprint=credential.get("thumbprint"))
-
-        full_url = "https://graph.microsoft.com/v1.0/organization"
-        options = RequestOptions(full_url)
-        options.set_header('Accept', 'application/json; odata=verbose')
-        options.set_header('Content-Type', 'application/json')
-
-        auth_context.authenticate_request(options)
-        _ = options.headers["Authorization"]
-
-        print("Azure app is valid")
-    except Exception:
-        print("Azure app is invalid or credentials are incorrect")
+        token = get_access_token(
+            args.client_id,
+            args.tenant_id,
+            args.cert_file,
+            cert_password
+        )
+        print(f"Azure app is correct. Token: {token}")
+    except Exception as e:
+        print(f"Azure app is invalid or credentials are incorrect. {e}")
 
 
 if __name__ == '__main__':
