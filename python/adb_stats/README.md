@@ -14,17 +14,23 @@
 1. Run the below command to pair the Android device via pairing code:
 
    ```powershell
-   adb pair <IP>:<port>     # These details will be shown in the pairing dialog on the Android device
+   adb pair <IP>:<port>                                                       # These details will be shown in the pairing dialog on the Android device
    ```
 
 1. Run the below command to connect to the Android device:
 
    ```powershell
-   adb connect <IP>:<port>  # The port will not be the same as the one used to pair, it is common for all pairing methods
+   adb connect <IP>:<port>                                                    # The port will not be the same as the one used to pair, it is common for all pairing methods
+   ```
+
+1. Run the below command to get the usage stats:
+
+   ```powershell
+   adb -s <IP>:<port> shell dumpsys usagestats | Set-Content usagestats.txt   # The port will not be the same as the one used to pair, it is common for all pairing methods
    ```
 
 1. Run the below command to disconnect the Android device:
 
    ```powershell
-   adb disconnect           # This will disconnect everything
+   adb disconnect                                                             # This will disconnect everything
    ```
