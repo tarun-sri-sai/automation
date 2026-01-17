@@ -3,6 +3,7 @@ param (
     [string]$FolderPath
 )
 
+$thisDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
 Import-Module (Join-Path (Join-Path "$thisDirectory" "lib") "Encryption.psm1")
 
 $password = Read-PasswordFromInput

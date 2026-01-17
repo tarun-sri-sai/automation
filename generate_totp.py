@@ -1,19 +1,14 @@
-import pyotp
 import sys
+import yaml
+import pyotp
 import warnings
-from argparse import ArgumentParser
 from tabulate import tabulate
-from getpass import getpass
+from lib.encryption import decrypt, read_password
+from argparse import ArgumentParser
 from urllib.parse import urlparse, parse_qs, unquote
-from pgpy import PGPMessage
 
 # For warnings from cryptography
 warnings.filterwarnings('ignore')
-
-
-def decrypt(encrypted_blob: bytes, password: str) -> bytes:
-    message = PGPMessage.from_blob(encrypted_blob)
-    return message.decrypt(password).message
 
 
 def parse_otpauth_url(otpauth_url):
@@ -56,12 +51,12 @@ def get_totp_urls(file_path, encrypted):
             data = f.read()
 
         if encrypted:
-            password = getpass(
+            password = read_password(
                 "Enter the password to decrypt the encryption (OpenPGP): "
             )
-            data = decrypt(data, password)
+            data = yaml.safe_load(decrypt(data, password))
 
-        return data.splitlines()
+        return data["Secret URIs"]
     except Exception as e:
         print(f"Error while decrypting TOTP urls from {file_path}: {e}")
         raise
