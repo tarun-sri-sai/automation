@@ -1,10 +1,13 @@
 
-import argparse
-import sys
 import re
+import sys
+import argparse
+import warnings
 from pathlib import Path
-from getpass import getpass
-from pgpy import PGPMessage
+from lib.encryption import decrypt, read_password
+
+# For warnings from cryptography
+warnings.filterwarnings('ignore')
 
 
 def find_files(directory, extension, recursive):
@@ -18,7 +21,7 @@ def find_files(directory, extension, recursive):
 def decrypt_file(file_path, password):
     try:
         with open(file_path, 'r') as f:
-            return PGPMessage.from_blob(f.read()).decrypt(password).message
+            return decrypt(f.read(), password)
     except Exception as e:
         print(f"Error decrypting {file_path}: {e}", file=sys.stderr)
         return None
@@ -48,7 +51,7 @@ def main():
 
     args = parser.parse_args()
 
-    password = getpass("Enter password: ")
+    password = read_password("Enter password: ")
 
     files = find_files(args.directory, args.extension, args.recurse)
     for file_path in files:
