@@ -24,9 +24,9 @@ if (0 -eq $ZipFileName.Length) {
     $ZipFileName = $(hostname)
 }
 
-Import-Module Logging
-Import-Module Encryption
-Import-Module Filesystem
+Import-Module (Join-Path (Join-Path "$thisDirectory" "lib") "Logging.psm1")
+Import-Module (Join-Path (Join-Path "$thisDirectory" "lib") "Encryption.psm1")
+Import-Module (Join-Path (Join-Path "$thisDirectory" "lib") "Filesystem.psm1")
 
 $thisDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $fileBaseName = [System.IO.Path]::GetFileNameWithoutExtension($MyInvocation.MyCommand.Definition)

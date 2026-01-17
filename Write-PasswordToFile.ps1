@@ -3,7 +3,7 @@ param (
     [string]$FolderPath
 )
 
-Import-Module Encryption
+Import-Module (Join-Path (Join-Path "$thisDirectory" "lib") "Encryption.psm1")
 
 $password = Read-PasswordFromInput
 $password | ConvertFrom-SecureString | Out-File (Join-Path "$FolderPath" "password.txt")
