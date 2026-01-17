@@ -1,4 +1,5 @@
-Import-Module Logging
+$thisDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
+Import-Module (Join-Path "$thisDirectory" "Logging.psm1")
 
 function Get-PasswordFromFile {
     param (

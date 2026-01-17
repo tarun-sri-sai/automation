@@ -1,0 +1,21 @@
+# ignore node packages
+node_modules
+
+# ignore python virtual env
+venv
+
+# ignore python bytecode files
+*.pyc
+
+# ignore filesystem db
+directory_tree.db
+
+# ignore adb temp files
+usagestats.txt
+usagestats_yearly_packages.csv
+usagestats_yearly_packages.txt
+top_*_apps.csv
+web_cache.sqlite
+
+# ignore tax brackets file
+tax_brackets.csv
