@@ -42,10 +42,10 @@ function Write-LogMessage {
     }
 }
 
-function Invoke-LoggedExpression {
+function Invoke-LoggedScriptBlock {
     param (
         [Parameter(Mandatory = $true)]
-        [string]$Command,
+        [ScriptBlock]$ScriptBlock,
 
         [Parameter(Mandatory = $true)]
         [string]$LogPath,
@@ -54,11 +54,11 @@ function Invoke-LoggedExpression {
     )
 
     try {
-        $output = Invoke-Expression "$Command 2>&1"
-        Write-LogMessage -LogPath $LogPath -Message "${Command}: $output" -Level $Level
+        $output = & $ScriptBlock 2>&1
+        Write-LogMessage -LogPath $LogPath -Message "$($ScriptBlock.ToString().Trim()): $output" -Level $Level
     }
     catch {
-        Write-LogMessage -LogPath $LogPath -Message "${Command}: ERROR - $($_.Exception.Message)" -Level 2
+        Write-LogMessage -LogPath $LogPath -Message "$($ScriptBlock.ToString().Trim()): ERROR - $($_.Exception.Message)" -Level 2
         throw $_
     }
 }
@@ -78,4 +78,4 @@ function Write-LogException {
     Write-LogMessage -LogPath $LogPath -Message "PowerShell ScriptStackTrace:`n$($Exception.ScriptStackTrace)"
 }
 
-Export-ModuleMember -Function Write-LogMessage, Invoke-LoggedExpression, Write-LogException
+Export-ModuleMember -Function Write-LogMessage, Invoke-LoggedScriptBlock, Write-LogException
