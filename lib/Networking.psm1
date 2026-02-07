@@ -140,8 +140,7 @@ function Get-Subnet {
     
             $reachableIPs = New-Object 'System.Collections.Concurrent.ConcurrentBag[string]'
             $progress = 0
-            $progressLock = New-Object 'System.Threading.Mutex'
-    
+
             $scriptBlock = {
                 param($ip, $count, $port, $reachableIPs)
         
@@ -186,11 +185,9 @@ function Get-Subnet {
                     $runspace.PowerShell.Dispose()
                     $runspaces.Remove($runspace)
             
-                    $progressLock.WaitOne() | Out-Null
                     $progress++
                     $percentComplete = [math]::Min(100, ($progress / $totalIPs) * 100)
                     Write-Progress -Activity "Scanning IP addresses" -Status "Checked $progress of $totalIPs IPs" -PercentComplete $percentComplete
-                    $progressLock.ReleaseMutex()
                 }
 
                 $powerShell = [powershell]::Create().AddScript($scriptBlock).AddArgument($currentIP).AddArgument($Count).AddArgument($Port).AddArgument($reachableIPs)
@@ -212,11 +209,9 @@ function Get-Subnet {
                     $runspace.PowerShell.Dispose()
                     $runspaces.Remove($runspace)
             
-                    $progressLock.WaitOne() | Out-Null
                     $progress++
                     $percentComplete = [math]::Min(100, ($progress / $totalIPs) * 100)
                     Write-Progress -Activity "Scanning IP addresses" -Status "Checked $progress of $totalIPs IPs" -PercentComplete $percentComplete
-                    $progressLock.ReleaseMutex()
                 }
         
                 if ($runspaces.Count -gt 0) {
