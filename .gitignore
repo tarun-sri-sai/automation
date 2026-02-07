@@ -20,5 +20,12 @@ web_cache.sqlite
 # ignore tax brackets file
 tax_brackets.csv
 
+# ignore build files
+build/
+dist/
+*.spec
+
+
 # ignore logs
 *.log
+*.log.*
