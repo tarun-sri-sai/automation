@@ -6,7 +6,7 @@ param (
     [string]$MountPath,
 
     [Parameter(Mandatory = $true)]
-    [string]$PassFile,
+    [string]$CertPath,
 
     [int]$Versions = 5,
 
@@ -20,13 +20,12 @@ param (
 )
 
 $ZipFileName = $ZipFileName.Trim()
-if (0 -eq $ZipFileName.Length) {
+if ($ZipFileName.Length -eq 0) {
     $ZipFileName = $(hostname)
 }
 
 $thisDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
 Import-Module (Join-Path (Join-Path "$thisDirectory" "lib") "Logging.psm1")
-Import-Module (Join-Path (Join-Path "$thisDirectory" "lib") "Encryption.psm1")
 Import-Module (Join-Path (Join-Path "$thisDirectory" "lib") "Filesystem.psm1")
 
 $fileBaseName = [System.IO.Path]::GetFileNameWithoutExtension($MyInvocation.MyCommand.Definition)
@@ -34,14 +33,17 @@ $logPath = Join-Path (Join-Path $thisDirectory "logs") "$fileBaseName.log"
 
 try {
     $ext = "7z"
+    $encExt = "enc"
     $date = Get-Date -Format "yyyyMMddHHmmss"
     $zipFile = "${ZipFileName}_${date}.${ext}"
-    if (Test-Path $zipFile) {
-        Write-LogMessage -LogPath $logPath -Message "Removing existing zip file: ${zipFile}."
+    $encryptedFile = "$zipFile.${encExt}"
+
+    if (Test-Path $encryptedFile) {
+        Write-LogMessage -LogPath $logPath -Message "Removing existing zip file: ${encryptedFile}."
         Remove-Item -Force $zipFile
     }
     else {
-        Write-LogMessage -LogPath $logPath -Message "Zip file: ${zipFile} does not exist."
+        Write-LogMessage -LogPath $logPath -Message "Zip file: ${encryptedFile} does not exist."
     }
 
     foreach ($item in $Paths) {
@@ -57,28 +59,38 @@ try {
         $excludeOptions = ""
     }
 
-    Write-LogMessage -LogPath $logPath "Reading password securely."
-    $password = Get-PasswordFromFile -LogPath $logPath -PassFile $PassFile
-
     $itemList = $Paths -join ' '
-    Write-LogMessage -LogPath $logPath -Message "Compressing to file: $zipFile."
-    Invoke-Expression "7z a -mx=$CompressionLevel -p`"$password`" '$zipFile' $excludeOptions $itemList"
 
-    Write-LogMessage -LogPath $logPath -Message "Moving zip file to $MountPath."
-    Move-Item -Force $zipFile "$MountPath"
+    Write-LogMessage -LogPath $logPath -Message "Creating archive $zipFile."
 
-    $filesToRemove = Get-FilesToRemove -PathFilter (Join-Path $MountPath "${ZipFileName}*" ) -Versions $Versions -AsDays:$AsDays
+    $scriptArgs = @("a", "-mx=$CompressionLevel", $zipFile, $excludeOptions, $itemList) | Where-Object { $_ -and $_.Trim() }
+    Invoke-LoggedScriptBlock -LogPath $logPath -ScriptBlock {
+        & 7z @scriptArgs
+    }
+
+    Write-LogMessage -LogPath $logPath -Message "Encrypting archive using certificate: $CertPath."
+    Invoke-LoggedScriptBlock -LogPath $logPath -ScriptBlock {
+        & openssl cms -encrypt -binary -aes256 -out $encryptedFile -outform DER -in $zipFile $CertPath
+    }
+
+    Write-LogMessage -LogPath $logPath -Message "Removing unencrypted archive."
+    Remove-Item -Force $zipFile
+
+    Write-LogMessage -LogPath $logPath -Message "Moving encrypted archive to $MountPath."
+    Move-Item -Force $encryptedFile $MountPath
+
+    $filesToRemove = Get-FilesToRemove -PathFilter (Join-Path $MountPath "${ZipFileName}*.${ext}.${encExt}") -Versions $Versions -AsDays:$AsDays
     Write-LogMessage -LogPath $logPath -Message "Matched files with filter ${ZipFileName}: $($filesToRemove.Count)"
 
     foreach ($file in $filesToRemove) {
-        Write-LogMessage -LogPath $logPath -Message "Removing old backup: $file." -Level 5        
+        Write-LogMessage -LogPath $logPath -Message "Removing old backup: $file" -Level 5
         Remove-Item -Force $file
     }
 
     Write-LogMessage -LogPath $logPath -Message "Back up finished for $($Paths -join ', ') to $MountPath."
 }
 catch {
-    Write-LogMessage -LogPath $logPath -Message "An error occurred while backing up items: $_." -Level 1
-    Write-LogException -LogPath $LogPath -Exception $_
+    Write-LogMessage -LogPath $logPath -Message "Backup failed: $_." -Level 1
+    Write-LogException -LogPath $logPath -Exception $_
     exit 1
 }
