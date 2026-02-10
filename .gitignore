@@ -7,9 +7,6 @@ venv
 # ignore python bytecode files
 *.pyc
 
-# ignore filesystem db
-directory_tree.db
-
 # ignore adb temp files
 usagestats.txt
 usagestats_yearly_packages.csv
