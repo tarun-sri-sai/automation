@@ -22,6 +22,8 @@ build/
 dist/
 *.spec
 
+# ignore notion backup file
+notion_backup.json
 
 # ignore logs
 *.log
