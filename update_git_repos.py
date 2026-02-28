@@ -1,10 +1,10 @@
-import os
-import logging
-import typing
-import requests
-import sys
-import subprocess
 import json
+import logging
+import os
+import re
+import requests
+import subprocess
+import sys
 from argparse import ArgumentParser
 from logging import handlers
 
@@ -13,49 +13,53 @@ WORK_DIR = os.path.dirname(__file__)
 SCRIPT_FILE = os.path.basename(__file__)
 
 
-class UpdateGitReposLogger:
-    def __init__(self: typing.Self):
-        self._logger = logging.getLogger()
+def setup_logger(
+    name,
+    log_file,
+    level=logging.INFO,
+    max_bytes=5 * 1024 * 1024,
+    backup_count=2,
+):
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.propagate = False  # avoid duplicate logs
 
-        log_file_name = os.path.splitext(SCRIPT_FILE)[0] + ".log"
-        log_file_dir = os.path.join(WORK_DIR, "logs")
-        os.makedirs(log_file_dir, exist_ok=True)
-        log_file = os.path.join(log_file_dir, log_file_name)
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
 
-        formatter = logging.Formatter(
-            "%(asctime)s - %(levelname)s - %(message)s")
+    formatter = logging.Formatter(
+        "%(asctime)s - %(levelname)s - %(message)s"
+    )
 
-        log_file_size = 5 * int(1024 ** 2)
-        rf_handler = handlers.RotatingFileHandler(
-            log_file, maxBytes=log_file_size, backupCount=2)
-        rf_handler.setFormatter(formatter)
+    file_handler = handlers.RotatingFileHandler(
+        log_file,
+        maxBytes=max_bytes,
+        backupCount=backup_count
+    )
+    file_handler.setFormatter(formatter)
 
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setFormatter(formatter)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
 
-        self._logger.addHandler(rf_handler)
-        self._logger.addHandler(console_handler)
-        self._logger.setLevel(logging.INFO)
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
 
-    def critical(self: typing.Self, message: str) -> None:
-        self._logger.critical(message)
-
-    def error(self: typing.Self, message: str) -> None:
-        self._logger.error(message)
-
-    def warning(self: typing.Self, message: str) -> None:
-        self._logger.warning(message)
-
-    def info(self: typing.Self, message: str) -> None:
-        self._logger.info(message)
-
-    def debug(self: typing.Self, message: str) -> None:
-        self._logger.debug(message)
+    return logger
 
 
-def discover_git_repos(log: UpdateGitReposLogger,
-                       visibility: str = None,
-                       username: str = None) -> list[str]:
+log = setup_logger(
+    __name__,
+    os.path.join(WORK_DIR, "logs", os.path.splitext(SCRIPT_FILE)[0] + ".log"),
+)
+
+
+def get_repo_url(repo, ssh_host=None):
+    if ssh_host:
+        return re.sub(r"git@[^:]+:", f"{ssh_host}:", repo["ssh_url"])
+
+    return repo["clone_url"]
+
+
+def discover_git_repos(visibility=None, username=None, ssh_host=None):
     url = "https://api.github.com/user/repos"
     headers = {
         "Accept": "application/json",
@@ -101,15 +105,13 @@ def discover_git_repos(log: UpdateGitReposLogger,
             log.error(f"API failed {response.status_code}: {response.text}")
             return []
 
-        return [repo["clone_url"] for repo in response.json()]
+        return [get_repo_url(repo, ssh_host) for repo in response.json()]
     except Exception as e:
         log.error(f"Error while discovering repos: {e}.")
         return []
 
 
-def update_local_clones(log: UpdateGitReposLogger,
-                        repos_dir: str,
-                        repo_urls: list[str]) -> None:
+def update_local_clones(repos_dir, repo_urls):
     for url in repo_urls:
         repo_name = os.path.basename(url).replace(".git", "")
         repo_path = os.path.join(repos_dir, repo_name)
@@ -127,18 +129,34 @@ def update_local_clones(log: UpdateGitReposLogger,
             log.error(f"Error while updating latest changes: {e}.")
 
 
-def main() -> None:
-    log = UpdateGitReposLogger()
-
+def main():
     try:
         parser = ArgumentParser()
-        parser.add_argument("-v", "--visibility", dest="visibility")
-        parser.add_argument("-u", "--username", dest="username")
+        parser.add_argument(
+            "-v",
+            "--visibility",
+            help="Repo visibility ('public', 'private')"
+        )
+        parser.add_argument(
+            "-u",
+            "--username",
+            help="GitHub username"
+        )
+        parser.add_argument(
+            "-s",
+            "--ssh-host",
+            help="Custom SSH host (uses SSH instead of HTTPS for cloning repo)"
+        )
         parser.add_argument("repos_dir")
         args = parser.parse_args()
-        repo_urls = discover_git_repos(log, args.visibility, args.username)
 
-        update_local_clones(log, args.repos_dir, repo_urls)
+        repo_urls = discover_git_repos(
+            args.visibility,
+            args.username,
+            args.ssh_host
+        )
+
+        update_local_clones(args.repos_dir, repo_urls)
     except Exception as e:
         log.critical(f"Error while updating git repos: {e}.")
         raise
