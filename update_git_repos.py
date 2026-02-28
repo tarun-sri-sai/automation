@@ -123,8 +123,7 @@ def update_local_clones(repos_dir, repo_urls):
             log.info(f"Cloning repository {repo_name}.")
             subprocess.run(["git", "clone", url, repo_path], check=True)
         try:
-            subprocess.run(["git", "pull"], cwd=repo_path, check=True)
-            subprocess.run(["git", "restore", "."], cwd=repo_path, check=True)
+            subprocess.run(["git", "fetch", "--all"], cwd=repo_path, check=True)
         except subprocess.CalledProcessError as e:
             log.error(f"Error while updating latest changes: {e}.")
 
