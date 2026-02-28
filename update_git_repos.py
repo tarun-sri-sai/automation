@@ -101,7 +101,7 @@ def discover_git_repos(log: UpdateGitReposLogger,
             log.error(f"API failed {response.status_code}: {response.text}")
             return []
 
-        return [repo["ssh_url"] for repo in response.json()]
+        return [repo["clone_url"] for repo in response.json()]
     except Exception as e:
         log.error(f"Error while discovering repos: {e}.")
         return []
