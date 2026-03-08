@@ -1,5 +1,4 @@
 import sys
-import yaml
 import pyotp
 import warnings
 from tabulate import tabulate
@@ -54,9 +53,9 @@ def get_totp_urls(file_path, encrypted):
             password = read_password(
                 "Enter the password to decrypt the encryption (OpenPGP): "
             )
-            data = yaml.safe_load(decrypt(data, password))
+            data = decrypt(data, password)
 
-        return data["Secret URIs"]
+        return [l.strip() for l in data.splitlines() if l.strip()]
     except Exception as e:
         print(f"Error while decrypting TOTP urls from {file_path}: {e}")
         raise
