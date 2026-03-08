@@ -52,14 +52,14 @@ log = setup_logger(
 )
 
 
-def get_repo_url(repo, ssh_host=None):
+def get_repo_url(repo, ssh_host=None, use_ssh=None):
     if ssh_host:
         return re.sub(r"git@[^:]+:", f"{ssh_host}:", repo["ssh_url"])
 
-    return repo["clone_url"]
+    return repo["ssh_url"] if use_ssh else repo["clone_url"]
 
 
-def discover_git_repos(visibility=None, username=None, ssh_host=None):
+def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=None):
     url = "https://api.github.com/user/repos"
     headers = {
         "Accept": "application/json",
@@ -105,7 +105,7 @@ def discover_git_repos(visibility=None, username=None, ssh_host=None):
             log.error(f"API failed {response.status_code}: {response.text}")
             return []
 
-        return [get_repo_url(repo, ssh_host) for repo in response.json()]
+        return [get_repo_url(repo, ssh_host, use_ssh) for repo in response.json()]
     except Exception as e:
         log.error(f"Error while discovering repos: {e}.")
         return []
@@ -146,13 +146,20 @@ def main():
             "--ssh-host",
             help="Custom SSH host (uses SSH instead of HTTPS for cloning repo)"
         )
+        parser.add_argument(
+            "-l",
+            "--use-ssh",
+            action="store_true",
+            help="Uses SSH instead of HTTPS for cloning repo"
+        )
         parser.add_argument("repos_dir")
         args = parser.parse_args()
 
         repo_urls = discover_git_repos(
             args.visibility,
             args.username,
-            args.ssh_host
+            args.ssh_host,
+            args.use_ssh
         )
 
         update_local_clones(args.repos_dir, repo_urls)
