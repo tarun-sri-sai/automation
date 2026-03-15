@@ -1,13 +1,12 @@
-import sys
 import pyotp
-import warnings
-from tabulate import tabulate
-from lib.encryption import decrypt, read_password
+import time
+import yaml
 from argparse import ArgumentParser
+from lib.encryption import decrypt, read_password
+from rich.console import Console
+from rich.live import Live
+from rich.table import Table
 from urllib.parse import urlparse, parse_qs, unquote
-
-# For warnings from cryptography
-warnings.filterwarnings('ignore')
 
 
 def parse_otpauth_url(otpauth_url):
@@ -53,15 +52,17 @@ def get_totp_urls(file_path, encrypted):
             password = read_password(
                 "Enter the password to decrypt the encryption (OpenPGP): "
             )
-            data = decrypt(data, password)
+            data = yaml.safe_load(decrypt(data, password))
 
-        return [l.strip() for l in data.splitlines() if l.strip()]
+        return data["Secret URIs"]
     except Exception as e:
         print(f"Error while decrypting TOTP urls from {file_path}: {e}")
         raise
 
 
 def main():
+    console = Console()
+
     try:
         parser = ArgumentParser(
             description="Generates TOTP on the fly from a TOTP export file"
@@ -82,14 +83,26 @@ def main():
         totp_urls = get_totp_urls(args.file, args.encrypted)
 
         headers = ["Issuer", "Email", "TOTP"]
-        data = []
-        for url in totp_urls:
-            data.append(get_totp(url))
 
-        print(tabulate(data, headers=headers, tablefmt="grid"))
+        def build_table():
+            table = Table(show_header=True, header_style="bold cyan")
+
+            for col in headers:
+                table.add_column(col)
+
+            for url in totp_urls:
+                issuer, email, totp = get_totp(url)
+                table.add_row(issuer, email, totp)
+
+            return table
+
+        with Live(build_table(), refresh_per_second=1, console=console) as live:
+            while True:
+                time.sleep(15)
+                live.update(build_table())
+
     except Exception as e:
-        print(f"Fatal error: {e}")
-        sys.exit(1)
+        console.print(f"[red]Fatal error: {e}[/red]")
 
 
 if __name__ == "__main__":

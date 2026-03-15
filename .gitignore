@@ -25,6 +25,6 @@ dist/
 # ignore notion backup file
 notion_backup.json
 
-# ignore logs
+# ignore log files
 *.log
 *.log.*

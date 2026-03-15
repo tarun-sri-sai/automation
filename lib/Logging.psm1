@@ -9,6 +9,9 @@ function Write-LogMessage {
         [int]$Level = 4
     )
 
+    $logDir = Split-Path -Path $LogPath -Parent
+    New-Item -ItemType Directory -Path $logDir -ErrorAction SilentlyContinue | Out-Null
+
     $maxSize = 5MB
     if (Test-Path $LogPath) {
         $size = (Get-Item $LogPath).Length

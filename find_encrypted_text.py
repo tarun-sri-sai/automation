@@ -2,12 +2,8 @@
 import re
 import sys
 import argparse
-import warnings
 from pathlib import Path
 from lib.encryption import decrypt, read_password
-
-# For warnings from cryptography
-warnings.filterwarnings('ignore')
 
 
 def find_files(directory, extension, recursive):

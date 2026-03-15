@@ -1,11 +1,8 @@
 import sys
 import yaml
-import warnings
 from pathlib import Path
 from argparse import ArgumentParser
 from lib.encryption import decrypt, encrypt, read_password
-
-warnings.filterwarnings("ignore")
 
 
 def walk_credentials(parent_path, password, pattern=None):

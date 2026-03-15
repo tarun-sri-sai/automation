@@ -1,6 +1,10 @@
 import sys
+import warnings
 from pgpy import PGPMessage
 from getpass import getpass
+
+# For warnings from cryptography
+warnings.filterwarnings('ignore')
 
 
 def decrypt(encrypted_blob: bytes, password: str) -> bytes:

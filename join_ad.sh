@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "Usage: $0 --domain <domain> --user <domain_user>"
+echo "Usage: $0 --domain <domain> --user <username_without_domain>"
 
 log() { echo "[INFO] $1"; }
 
