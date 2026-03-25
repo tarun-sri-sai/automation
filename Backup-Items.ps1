@@ -16,7 +16,9 @@ param (
 
     [string]$ZipFileName = "",
 
-    [string[]]$Exclude = @()
+    [string[]]$Exclude = @(),
+
+    [switch]$NoSuffix = $false
 )
 
 $ZipFileName = $ZipFileName.Trim()
@@ -35,7 +37,12 @@ try {
     $ext = "7z"
     $encExt = "enc"
     $date = Get-Date -Format "yyyyMMddHHmmss"
-    $zipFile = "${ZipFileName}_${date}.${ext}"
+    if ($NoSuffix) {
+        $zipFile = "${ZipFileName}.${ext}"
+    }
+    else {
+        $zipFile = "${ZipFileName}_${date}.${ext}"
+    }
     $encryptedFile = "$zipFile.${encExt}"
 
     if (Test-Path $encryptedFile) {

@@ -1,6 +1,5 @@
 import pyotp
 import time
-import yaml
 from argparse import ArgumentParser
 from lib.encryption import decrypt, read_password
 from rich.console import Console
@@ -52,9 +51,9 @@ def get_totp_urls(file_path, encrypted):
             password = read_password(
                 "Enter the password to decrypt the encryption (OpenPGP): "
             )
-            data = yaml.safe_load(decrypt(data, password))
-
-        return data["Secret URIs"]
+            data = decrypt(data, password)
+        
+        return [l.strip() for l in data.split("\n") if l.strip()]
     except Exception as e:
         print(f"Error while decrypting TOTP urls from {file_path}: {e}")
         raise
