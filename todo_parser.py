@@ -8,10 +8,10 @@ from hashlib import sha256
 def get_text():
     parser = ArgumentParser()
     parser.add_argument(
-        "file", 
-        help="path to the todo file", 
-        type=str, 
-        optional=True
+        "-f",
+        "--file",
+        help="path to the todo file",
+        type=str
     )
     args = parser.parse_args()
 
@@ -35,7 +35,7 @@ def get_text():
 
 
 def normalize_newlines(text):
-    return re.sub(r"\r\n", "\n", text)
+    return re.sub(r"\r\n", "\n", text.strip())
 
 
 def split_blocks(text):
@@ -59,7 +59,7 @@ def is_heading_block(block):
 
 
 def is_finished(block):
-    len(block) >= 2 and re.match(r"^\[DONE\].*$", block[-1])
+    return len(block) >= 2 and bool(re.match(r"^\[DONE\].*$", block[-1]))
 
 
 def parse_blocks(blocks):
@@ -78,15 +78,21 @@ def parse_blocks(blocks):
         for line in block:
             indent_matches = re.match(r"^((?: {4})*)\S.*$", line)
             if not indent_matches:
-                print("invalid indentation", file=sys.stderr)
+                print(
+                    f"invalid indentation for \"{line}\"",
+                    file=sys.stderr
+                )
                 sys.exit(1)
 
             indent = indent_matches.group(1)
             if (
-                curr_indent is not None and 
+                curr_indent is not None and
                 indent != curr_indent
             ):
-                print("inconsistent indentation", file=sys.stderr)
+                print(
+                    f"inconsistent indentation for \"{line}\"",
+                    file=sys.stderr
+                )
                 sys.exit(1)
 
             if curr_indent is None:
@@ -97,11 +103,50 @@ def parse_blocks(blocks):
         block_data.append({
             "indent": len(curr_indent) // 4,
             "lines": block_lines,
-            "id": sha256(block_lines[1].encode()).hexdigest()[:8],
+            "id": sha256(block_lines[0].encode()).hexdigest()[:8],
             "finished": is_finished(block)
         })
 
     return block_data
+
+
+def validate_parents(block_data):
+    curr_indents = [-1]
+    curr_heading = ""
+    blocks_since_heading = 0
+    for block in block_data:
+        if "heading" in block:
+            blocks_since_heading = 0
+            curr_indents = [-1]
+            curr_heading = block["heading"]
+            continue
+
+        if blocks_since_heading == 0:
+            if block.get("indent") > 0:
+                print(f"invalid first task for {curr_heading}", file=sys.stderr)
+                sys.exit(1)
+
+            curr_indents.append(0)
+            blocks_since_heading += 1
+            continue
+
+        while curr_indents and curr_indents[-1] > block["indent"]:
+            curr_indents.pop()
+
+        if (
+            block["indent"] != curr_indents[-1] and 
+            block["indent"] - 1 != curr_indents[-1]
+        ):
+            print(
+                f"invalid parent task for \"{block['lines'][0]}\"",
+                file=sys.stderr
+            )
+            sys.exit(1)
+
+        if block["indent"] == curr_indents[-1] + 1:
+            curr_indents.append(block["indent"])
+
+        blocks_since_heading += 1
 
 
 def validate_block_data(block_data):
@@ -113,33 +158,7 @@ def validate_block_data(block_data):
         print("first block must be a heading", file=sys.stderr)
         sys.exit(1)
 
-    curr_indents = set()
-    curr_heading = ""
-    blocks_since_heading = 0
-    for block in block_data:
-        if "heading" in block:
-            blocks_since_heading = 0
-            curr_indents = set()
-            curr_heading = block["heading"]
-            continue
-
-        if blocks_since_heading == 0 and block.get("indent") > 0:
-            print(f"invalid first task for {curr_heading}", file=sys.stderr)
-            sys.exit(1)
-
-        curr_indents.add(block["indent"])
-        if (
-            blocks_since_heading > 0 and
-            block["indent"] - 1 not in curr_indents
-        ):
-            print(
-                f"invalid parent task for {block['lines'[0]]}",
-                file=sys.stderr
-            )
-            sys.exit(1)
-
-        blocks_since_heading += 1
-
+    validate_parents(block_data)
 
 def parse_todo(text):
     blocks = split_blocks(text)
