@@ -1,5 +1,5 @@
 beautifulsoup4==4.14.2
-cryptography==39.0.2
+cryptography==46.0.5
 GitPython==3.1.45
 pandas==2.2.3
 pycryptodome==3.23.0
