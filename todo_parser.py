@@ -104,7 +104,7 @@ def parse_blocks(blocks):
             "indent": len(curr_indent) // 4,
             "lines": block_lines,
             "id": sha256(block_lines[0].encode()).hexdigest()[:8],
-            "finished": is_finished(block)
+            "finished": is_finished(block_lines)
         })
 
     return block_data
