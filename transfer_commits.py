@@ -1,7 +1,9 @@
 import os
-import sys
-import subprocess
 import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
 
 
 def run_command(command, cwd=None):
@@ -12,6 +14,27 @@ def run_command(command, cwd=None):
         print(f"Error: {result.stderr}")
         sys.exit(1)
     return result.stdout.strip()
+
+
+def export_commit(src_repo, dest_repo, commit):
+    with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as tmp:
+        archive_path = tmp.name
+
+    run_command(f"git archive {commit} -o {archive_path}", src_repo)
+
+    for item in os.listdir(dest_repo):
+        if item == ".git":
+            continue
+        path = os.path.join(dest_repo, item)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
+
+    with tarfile.open(archive_path) as tar:
+        tar.extractall(dest_repo)
+
+    os.remove(archive_path)
 
 
 def main():
@@ -37,26 +60,15 @@ def main():
             sys.exit(1)
 
     for commit in commits:
-        run_command(f"git restore --source={commit} --worktree .", src_repo)
+        export_commit(src_repo, dest_repo, commit)
+
         commit_message = run_command(
             f"git log -1 --pretty=%B {commit}",
             src_repo
         )
 
-        for item in os.listdir(src_repo):
-            if item == ".git":
-                continue
-            src_path = os.path.join(src_repo, item)
-            dest_path = os.path.join(dest_repo, item)
-            if os.path.isdir(src_path):
-                shutil.copytree(src_path, dest_path, dirs_exist_ok=True)
-            else:
-                shutil.copy2(src_path, dest_path)
-
         run_command("git add -A", dest_repo)
         run_command(f"git commit -m \"{commit_message}\"", dest_repo)
-
-    run_command("git restore --source=HEAD --worktree .", src_repo)
 
 
 if __name__ == "__main__":
