@@ -7,7 +7,7 @@ pycryptodomex==3.23.0
 pyotp==2.9.0
 PyYAML==6.0.2
 PGPy==0.6.0
-requests==2.32.4
+requests==2.33.0
 requests-cache==1.2.1
 rich==14.3.2
 scikit-learn==1.7.2
