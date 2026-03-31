@@ -2,6 +2,7 @@ import hashlib
 import json
 import sys
 from argparse import ArgumentParser
+from fnmatch import fnmatch
 from pathlib import Path
 
 
@@ -15,7 +16,17 @@ def file_hash(path: Path, chunk_size: int = 1024 * 1024) -> str:
     return h.hexdigest()
 
 
-def walk(root: Path, path: Path) -> dict:
+def is_excluded(root: Path, entry: Path, excludes: list[str]) -> bool:
+    relative_path = entry.relative_to(root).as_posix()
+
+    for pattern in excludes:
+        if fnmatch(entry.name, pattern) or fnmatch(relative_path, pattern):
+            return True
+
+    return False
+
+
+def walk(root: Path, path: Path, excludes: list[str]) -> dict:
     node = {
         "type": "directory",
         "name": path.name or str(path),
@@ -30,6 +41,9 @@ def walk(root: Path, path: Path) -> dict:
         sys.exit(1)
 
     for entry in entries:
+        if is_excluded(root, entry, excludes):
+            continue
+
         if entry.is_symlink():
             node["children"].append({
                 "type": "symlink",
@@ -37,7 +51,7 @@ def walk(root: Path, path: Path) -> dict:
                 "target": entry.readlink().as_posix(),
             })
         elif entry.is_dir():
-            node["children"].append(walk(root, entry))
+            node["children"].append(walk(root, entry, excludes))
         elif entry.is_file():
             node["children"].append({
                 "type": "file",
@@ -53,14 +67,14 @@ def walk(root: Path, path: Path) -> dict:
     return node
 
 
-def build_tree(root: Path) -> dict:
+def build_tree(root: Path, excludes: list[str]) -> dict:
     if not root.is_dir():
         print(f"{root.name} is not a valid path", file=sys.stderr)
         sys.exit(1)
 
     root = root.resolve()
 
-    return walk(root, root)
+    return walk(root, root, excludes)
 
 
 def main():
@@ -69,11 +83,18 @@ def main():
         "path",
         help="path to the directory to serialize"
     )
+    parser.add_argument(
+        "-x",
+        "--exclude",
+        action="append",
+        default=[],
+        help="exclude files or directories using glob pattern (repeatable)",
+    )
 
     args = parser.parse_args()
 
     path = Path(args.path) or Path(".")
-    output = json.dumps(build_tree(path))
+    output = json.dumps(build_tree(path, args.exclude))
     print(output)
 
 
