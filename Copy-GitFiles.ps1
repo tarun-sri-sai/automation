@@ -166,7 +166,7 @@ try {
     $failedCount = ($copyResults | Where-Object { $_.Status -eq "failed" }).Count
 
     foreach($result in $copyResults | Where-Object { $_.Status -eq "skipped" }) {
-        Write-LogMessage -LogPath $logPath -Message $result.Message
+        Write-LogMessage -LogPath $logPath -Message $result.Message -Level 5
     }
 
     foreach ($result in $copyResults | Where-Object { $_.Status -ne "skipped" }) {
