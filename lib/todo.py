@@ -124,8 +124,7 @@ def _validate_block_data(block_data):
         sys.exit(0)
 
     if "heading" not in block_data[0]:
-        print("first block must be a heading", file=sys.stderr)
-        sys.exit(1)
+        print("WARNING: first block must be a heading", file=sys.stderr)
 
     _validate_parents(block_data)
 
