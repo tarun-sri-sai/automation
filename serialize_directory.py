@@ -72,8 +72,9 @@ def main():
 
     args = parser.parse_args()
 
-    target = Path(args.path) or Path(".")
-    print(json.dumps(build_tree(target), indent=2))
+    path = Path(args.path) or Path(".")
+    output = json.dumps(build_tree(path))
+    print(output)
 
 
 if __name__ == "__main__":
