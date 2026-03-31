@@ -1,0 +1,80 @@
+import hashlib
+import json
+import sys
+from argparse import ArgumentParser
+from pathlib import Path
+
+
+def file_hash(path: Path, chunk_size: int = 1024 * 1024) -> str:
+    h = hashlib.sha256()
+
+    with path.open("rb") as f:
+        while chunk := f.read(chunk_size):
+            h.update(chunk)
+
+    return h.hexdigest()
+
+
+def walk(root: Path, path: Path) -> dict:
+    node = {
+        "type": "directory",
+        "name": path.name or str(path),
+        "path": "." if path == root else path.relative_to(root).as_posix(),
+        "children": [],
+    }
+
+    try:
+        entries = sorted(path.iterdir(), key=lambda p: p.name)
+    except PermissionError:
+        print(f"permission denied: {path}", file=sys.stderr)
+        sys.exit(1)
+
+    for entry in entries:
+        if entry.is_symlink():
+            node["children"].append({
+                "type": "symlink",
+                "name": entry.name,
+                "target": entry.readlink().as_posix(),
+            })
+        elif entry.is_dir():
+            node["children"].append(walk(root, entry))
+        elif entry.is_file():
+            node["children"].append({
+                "type": "file",
+                "name": entry.name,
+                "sha256": file_hash(entry),
+            })
+        else:
+            node["children"].append({
+                "type": "other",
+                "name": entry.name,
+            })
+
+    return node
+
+
+def build_tree(root: Path) -> dict:
+    if not root.is_dir():
+        print(f"{root.name} is not a valid path", file=sys.stderr)
+        sys.exit(1)
+
+    root = root.resolve()
+
+    return walk(root, root)
+
+
+def main():
+    parser = ArgumentParser(description="serialize a directory")
+    parser.add_argument(
+        "path",
+        help="path to the directory to serialize"
+    )
+
+    args = parser.parse_args()
+
+    target = Path(args.path) or Path(".")
+    print(json.dumps(build_tree(target), indent=2))
+
+
+if __name__ == "__main__":
+    main()
