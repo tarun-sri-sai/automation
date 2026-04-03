@@ -101,10 +101,10 @@ def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=No
             response = requests.get(url, headers=headers, params=params)
             log.info(f"Status for discovery response: {response.status_code}.")
 
-            if response.status_code == 401:
+            if response.status_code == requests.codes.unauthorized:
                 log.warning("You may need to provide a valid GitHub token.")
 
-            if response.status_code != 200:
+            if response.status_code != requests.codes.ok:
                 log.error(f"API {response.status_code}: {response.text}")
                 return []
 
