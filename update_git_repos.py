@@ -158,7 +158,10 @@ def main():
             action="store_true",
             help="Print discovered repo URLs without cloning/updating"
         )
-        parser.add_argument("repos_dir")
+        parser.add_argument(
+            "repos_dir",
+            help="Directory to clone/update repositories into"
+        )
         args = parser.parse_args()
 
         repo_urls = discover_git_repos(
