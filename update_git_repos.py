@@ -5,6 +5,7 @@ import re
 import requests
 import subprocess
 import sys
+import time
 from argparse import ArgumentParser
 from logging import handlers
 
@@ -93,19 +94,34 @@ def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=No
 
     log.info(f"Params: {json.dumps(params, indent=2)}")
 
+    repo_urls = []
     try:
-        log.info(f"Requesting endpoint {url} for repos.")
-        response = requests.get(url, headers=headers, params=params)
-        log.info(f"Status for discovery response: {response.status_code}.")
+        while url:
+            log.info(f"Requesting endpoint {url} for repos.")
+            response = requests.get(url, headers=headers, params=params)
+            log.info(f"Status for discovery response: {response.status_code}.")
 
-        if response.status_code == 401:
-            log.warning("You may need to provide a valid GitHub token.")
+            if response.status_code == 401:
+                log.warning("You may need to provide a valid GitHub token.")
 
-        if response.status_code != 200:
-            log.error(f"API failed {response.status_code}: {response.text}")
-            return []
+            if response.status_code != 200:
+                log.error(f"API {response.status_code}: {response.text}")
+                return []
 
-        return [get_repo_url(repo, ssh_host, use_ssh) for repo in response.json()]
+            curr_repos = [
+                get_repo_url(repo, ssh_host, use_ssh)
+                for repo in response.json()
+            ]
+            log.info(f"Discovered {len(curr_repos)} repos in current page.")
+            repo_urls += curr_repos
+
+            url = response.links.get("next", {}).get("url")
+            if url:
+                sleep_secs = 10
+                log.info(f"Sleeping for {sleep_secs}s before requesting {url}.")
+                time.sleep(sleep_secs)
+
+        return repo_urls
     except Exception as e:
         log.error(f"Error while discovering repos: {e}.")
         return []
