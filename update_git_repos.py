@@ -152,6 +152,12 @@ def main():
             action="store_true",
             help="Uses SSH instead of HTTPS for cloning repo"
         )
+        parser.add_argument(
+            "-n",
+            "--dry-run",
+            action="store_true",
+            help="Print discovered repo URLs without cloning/updating"
+        )
         parser.add_argument("repos_dir")
         args = parser.parse_args()
 
@@ -162,7 +168,11 @@ def main():
             args.use_ssh
         )
 
-        update_local_clones(args.repos_dir, repo_urls)
+        if args.dry_run:
+            log.info("Dry run mode - discovered repo URLs:")
+            log.info(json.dumps(repo_urls, indent=2))
+        else:
+            update_local_clones(args.repos_dir, repo_urls)
     except Exception as e:
         log.critical(f"Error while updating git repos: {e}.")
         raise
