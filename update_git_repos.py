@@ -79,18 +79,21 @@ def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=No
         log.warning(f"Environment variable not given, it's ok: {e}.")
 
     params = {}
-    if bearer_token:
+
+    if username:
+        url = f"https://api.github.com/users/{username}/repos"
+    elif bearer_token:
         params["affiliation"] = "owner"
+    else:
+        log.error(f"Pass --username <github-username> for public repos")
+        return []
+
+    if bearer_token:
         if visibility in ["public", "private"]:
             params["visibility"] = visibility
     else:
-        if not username:
-            log.error(f"Pass --username <github-username> for public repos")
-            return []
-
-        url = f"https://api.github.com/users/{username}/repos"
-        params["visibility"] = "public"
         log.info("Unauthenticated requests can only access public repositories.")
+        params["visibility"] = "public"
 
     log.info(f"Params: {json.dumps(params, indent=2)}")
 
