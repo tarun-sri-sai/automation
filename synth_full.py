@@ -6,52 +6,9 @@ import os
 import shutil
 import sys
 import traceback
-from logging import handlers
 from pathlib import Path
 from typing import Dict, Iterable, Tuple
-
-
-WORK_DIR = os.path.dirname(__file__)
-SCRIPT_FILE = os.path.basename(__file__)
-
-
-def setup_logger(
-    name: str,
-    log_file: str,
-    level=logging.INFO,
-    max_bytes=5 * 1024 * 1024,
-    backup_count=2,
-):
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    logger.propagate = False  # avoid duplicate logs
-
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
-
-    formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)s - %(message)s"
-    )
-
-    file_handler = handlers.RotatingFileHandler(
-        log_file,
-        maxBytes=max_bytes,
-        backupCount=backup_count,
-    )
-    file_handler.setFormatter(formatter)
-
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
-
-    return logger
-
-
-log = setup_logger(
-    __name__,
-    os.path.join(WORK_DIR, "logs", os.path.splitext(SCRIPT_FILE)[0] + ".log"),
-)
+from lib.logging_util import setup_logger
 
 
 def list_dated_folders(backup_root: Path) -> list[Path]:
@@ -110,6 +67,18 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    work_dir = os.path.dirname(__file__)
+    script_file = os.path.basename(__file__)
+
+    setup_logger(
+        os.path.join(
+            work_dir, 
+            "logs", 
+            os.path.splitext(script_file)[0] + ".log"
+        )
+    )
+    logging.getLogger()
+
     try:
         args = parse_args()
 
@@ -117,24 +86,24 @@ def main() -> int:
         target_date = dt.date.today().strftime("%Y%m%d")
 
         if not backup_root.exists() or not backup_root.is_dir():
-            log.error("backup root not found or not a directory: %s", backup_root)
+            logging.error("backup root not found or not a directory: %s", backup_root)
             return 2
 
         dated_folders = list_dated_folders(backup_root)
         if not dated_folders:
-            log.error("no dated folders found in %s", backup_root)
+            logging.error("no dated folders found in %s", backup_root)
             return 3
 
         target_folder = backup_root / target_date
         source_folders = [folder for folder in dated_folders if folder.name != target_date]
 
         if not source_folders:
-            log.error("no source dated folders found after excluding target date")
+            logging.error("no source dated folders found after excluding target date")
             return 3
 
         latest_by_name = build_latest_index(source_folders)
         if not latest_by_name:
-            log.error("no regular files found in source dated folders")
+            logging.error("no regular files found in source dated folders")
             return 3
 
         created_target = False
@@ -154,7 +123,7 @@ def main() -> int:
             if destination_path.exists():
                 if files_identical(source_path, destination_path):
                     skipped += 1
-                    log.debug(
+                    logging.debug(
                         "SKIP  %s (already identical to source date %s)",
                         filename,
                         source_date,
@@ -162,32 +131,32 @@ def main() -> int:
                     continue
 
                 overwritten += 1
-                log.debug("OVERWRITE %s <- %s", filename, source_date)
+                logging.debug("OVERWRITE %s <- %s", filename, source_date)
                 if not args.dry_run:
                     shutil.copy2(source_path, destination_path)
                 continue
 
             copied += 1
-            log.debug("COPY  %s <- %s", filename, source_date)
+            logging.debug("COPY  %s <- %s", filename, source_date)
             if not args.dry_run:
                 shutil.copy2(source_path, destination_path)
 
         scanned_text = ", ".join(folder.name for folder in source_folders)
-        log.info("Synthetic full backup summary")
-        log.info("backup root     : %s", backup_root)
-        log.info("target folder   : %s", target_folder)
-        log.info("target created  : %s", "yes" if created_target else "no")
-        log.info("source folders  : %s (%s)", len(source_folders), scanned_text)
-        log.info("unique filenames: %s", len(latest_by_name))
-        log.info("copied          : %s", copied)
-        log.info("overwritten     : %s", overwritten)
-        log.info("skipped         : %s", skipped)
-        log.info("dry run         : %s", "yes" if args.dry_run else "no")
+        logging.info("Synthetic full backup summary")
+        logging.info("backup root     : %s", backup_root)
+        logging.info("target folder   : %s", target_folder)
+        logging.info("target created  : %s", "yes" if created_target else "no")
+        logging.info("source folders  : %s (%s)", len(source_folders), scanned_text)
+        logging.info("unique filenames: %s", len(latest_by_name))
+        logging.info("copied          : %s", copied)
+        logging.info("overwritten     : %s", overwritten)
+        logging.info("skipped         : %s", skipped)
+        logging.info("dry run         : %s", "yes" if args.dry_run else "no")
 
         return 0
     except Exception:
-        log.critical("failed to create synthetic full backup")
-        log.critical(traceback.format_exc())
+        logging.critical("failed to create synthetic full backup")
+        logging.critical(traceback.format_exc())
         return 1
 
 

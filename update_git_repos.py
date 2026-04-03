@@ -4,53 +4,9 @@ import os
 import re
 import requests
 import subprocess
-import sys
 import time
 from argparse import ArgumentParser
-from logging import handlers
-
-
-WORK_DIR = os.path.dirname(__file__)
-SCRIPT_FILE = os.path.basename(__file__)
-
-
-def setup_logger(
-    name,
-    log_file,
-    level=logging.INFO,
-    max_bytes=5 * 1024 * 1024,
-    backup_count=2,
-):
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    logger.propagate = False  # avoid duplicate logs
-
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
-
-    formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)s - %(message)s"
-    )
-
-    file_handler = handlers.RotatingFileHandler(
-        log_file,
-        maxBytes=max_bytes,
-        backupCount=backup_count
-    )
-    file_handler.setFormatter(formatter)
-
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
-
-    return logger
-
-
-log = setup_logger(
-    __name__,
-    os.path.join(WORK_DIR, "logs", os.path.splitext(SCRIPT_FILE)[0] + ".log"),
-)
+from lib.logging_util import setup_logger
 
 
 def get_repo_url(repo, ssh_host=None, use_ssh=None):
@@ -71,12 +27,12 @@ def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=No
     try:
         bearer_token = os.environ.get("GITHUB_TOKEN")
         if bearer_token:
-            log.info("Using bearer token from environment.")
+            logging.info("Using bearer token from environment.")
             headers["Authorization"] = f"Bearer {bearer_token}"
         else:
-            log.warning("No bearer token found in environment.")
+            logging.warning("No bearer token found in environment.")
     except Exception as e:
-        log.warning(f"Environment variable not given, it's ok: {e}.")
+        logging.warning(f"Environment variable not given, it's ok: {e}.")
 
     params = {}
 
@@ -85,48 +41,48 @@ def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=No
     elif bearer_token:
         params["affiliation"] = "owner"
     else:
-        log.error(f"Pass --username <github-username> for public repos")
+        logging.error(f"Pass --username <github-username> for public repos")
         return []
 
     if bearer_token:
         if visibility in ["public", "private"]:
             params["visibility"] = visibility
     else:
-        log.info("Unauthenticated requests can only access public repositories.")
+        logging.info("Unauthenticated requests can only access public repositories.")
         params["visibility"] = "public"
 
-    log.info(f"Params: {json.dumps(params, indent=2)}")
+    logging.info(f"Params: {json.dumps(params, indent=2)}")
 
     repo_urls = []
     try:
         while url:
-            log.info(f"Requesting endpoint {url} for repos.")
+            logging.info(f"Requesting endpoint {url} for repos.")
             response = requests.get(url, headers=headers, params=params)
-            log.info(f"Status for discovery response: {response.status_code}.")
+            logging.info(f"Status for discovery response: {response.status_code}.")
 
             if response.status_code == requests.codes.unauthorized:
-                log.warning("You may need to provide a valid GitHub token.")
+                logging.warning("You may need to provide a valid GitHub token.")
 
             if response.status_code != requests.codes.ok:
-                log.error(f"API {response.status_code}: {response.text}")
+                logging.error(f"API {response.status_code}: {response.text}")
                 return []
 
             curr_repos = [
                 get_repo_url(repo, ssh_host, use_ssh)
                 for repo in response.json()
             ]
-            log.info(f"Discovered {len(curr_repos)} repos in current page.")
+            logging.info(f"Discovered {len(curr_repos)} repos in current page.")
             repo_urls += curr_repos
 
             url = response.links.get("next", {}).get("url")
             if url:
                 sleep_secs = 10
-                log.info(f"Sleeping for {sleep_secs}s before requesting {url}.")
+                logging.info(f"Sleeping for {sleep_secs}s before requesting {url}.")
                 time.sleep(sleep_secs)
 
         return repo_urls
     except Exception as e:
-        log.error(f"Error while discovering repos: {e}.")
+        logging.error(f"Error while discovering repos: {e}.")
         return []
 
 
@@ -136,18 +92,30 @@ def update_local_clones(repos_dir, repo_urls):
         repo_path = os.path.join(repos_dir, repo_name)
 
         if os.path.exists(repo_path):
-            log.info(f"Repository {repo_name} already exists. "
+            logging.info(f"Repository {repo_name} already exists. "
                      f"Pulling latest changes.")
         else:
-            log.info(f"Cloning repository {repo_name}.")
+            logging.info(f"Cloning repository {repo_name}.")
             subprocess.run(["git", "clone", url, repo_path], check=True)
         try:
             subprocess.run(["git", "fetch", "--all"], cwd=repo_path, check=True)
         except subprocess.CalledProcessError as e:
-            log.error(f"Error while updating latest changes: {e}.")
+            logging.error(f"Error while updating latest changes: {e}.")
 
 
 def main():
+    work_dir = os.path.dirname(__file__)
+    script_file = os.path.basename(__file__)
+
+    setup_logger(
+        os.path.join(
+            work_dir, 
+            "logs", 
+            os.path.splitext(script_file)[0] + ".log"
+        )
+    )
+    logging.getLogger()
+
     try:
         parser = ArgumentParser()
         parser.add_argument(
@@ -191,12 +159,12 @@ def main():
         )
 
         if args.dry_run:
-            log.info("Dry run mode - discovered repo URLs:")
-            log.info(json.dumps(repo_urls, indent=2))
+            logging.info("Dry run mode - discovered repo URLs:")
+            logging.info(json.dumps(repo_urls, indent=2))
         else:
             update_local_clones(args.repos_dir, repo_urls)
     except Exception as e:
-        log.critical(f"Error while updating git repos: {e}.")
+        logging.critical(f"Error while updating git repos: {e}.")
         raise
 
 
