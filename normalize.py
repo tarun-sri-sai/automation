@@ -1,61 +1,142 @@
-import os
 import re
 import shutil
 from argparse import ArgumentParser
+from pathlib import Path
 
 
-def convert_to_snake_case(source_string):
-    word_matches = re.findall(r'[a-zA-Z0-9]+', source_string)
-    capitalized = [w.lower() for w in word_matches]
-    return "_".join(capitalized)
+def convert_to_kebab_case(source_string: str) -> str:
+    word_matches: list[str] = re.findall(r'[a-zA-Z0-9\.]+', source_string)
+    lowercase = [w.lower() for w in word_matches]
+    return "-".join(lowercase)
 
 
-def normalize(parent, dry_run):
-    for item in os.listdir(parent):
-        item_path = os.path.join(parent, item)
-        try:
-            if os.path.isfile(item_path):
-                base_name, exts = item.split(".", 1)
-                new_base_name = convert_to_snake_case(base_name)
-                new_name = f"{new_base_name}.{exts}"
-            else:
-                new_name = convert_to_snake_case(item)
-            new_path = os.path.join(parent, new_name)
+def get_contents(parent: Path, recursive: bool) -> dict[str, None | dict]:
+    contents = {}
+    for item in parent.iterdir():
+        if item.is_dir():
+            contents[item.name] = (
+                get_contents(item, recursive)
+                if recursive
+                else {}
+            )
+        else:
+            contents[item.name] = None
 
-            if new_path != item_path:
-                conversion = f"{{{item} => {new_name}}}"
-                conversion_path = os.path.join(parent, conversion)
-                if dry_run:
-                    print(f"Would rename {conversion_path}")
-                else:
-                    print(f"Renaming {conversion_path}")
-                    shutil.move(item_path, new_path)
-
-            next_path = item_path if dry_run else new_path
-            if os.path.isdir(next_path):
-                normalize(next_path, dry_run)
-        except Exception as e:
-            print(f"Failed to normalize {item_path}: {e}")
+    return contents
 
 
-def main():
+def allow_overwrite(new_path: Path) -> bool:
+    if not new_path.exists():
+        return True
+
+    responses = {
+        "y": True,
+        "n": False,
+        "": False
+    }
+
+    prompt = f"'{new_path}' exists. overwrite? [y/N]: "
+    bad_input = "invalid input, please enter 'y' or 'n'"
+    while True:
+        response = input(prompt).strip().lower()
+        if response in responses:
+            return responses[response]
+        else:
+            print(bad_input)
+
+
+def is_renamed(old_name: str, new_name: str) -> bool:
+    return old_name.lower() != new_name.lower()
+
+
+def try_normalize_path(path: Path, dry_run: bool) -> tuple[Path, str]:
+    normalized = path.parent / convert_to_kebab_case(path.name)
+
+    if dry_run:
+        return path, normalized.name
+
+    if is_renamed(path.name, normalized.name) and allow_overwrite(normalized):
+        shutil.move(path, normalized)
+
+    return normalized, normalized.name
+
+
+def normalize_contents(
+    parent: Path,
+    contents: dict[str, None | dict],
+    dry_run: bool,
+    file_only: bool
+) -> None:
+    if file_only:
+        new_parent, changed_name = parent, parent.name
+    else:
+        new_parent, changed_name = try_normalize_path(parent, dry_run)
+
+    if is_renamed(parent.name, changed_name):
+        print(f"[{parent.parent}]\n\t{parent.name} -> {changed_name}\n")
+
+    normalized_files = []
+    for key, value in contents.items():
+        if value is not None:
+            normalize_contents(new_parent / key, value, dry_run, file_only)
+
+        else:
+            _, changed_name = try_normalize_path(new_parent / key, dry_run)
+
+            if is_renamed(key, changed_name):
+                normalized_files.append((key, changed_name))
+
+    if normalized_files:
+        print(f"[{new_parent}]")
+        for old_name, new_name in normalized_files:
+            print(f"\t{old_name} -> {new_name}")
+        print()
+
+
+def normalize(
+    parent: str,
+    dry_run: bool,
+    file_only: bool,
+    recursive: bool
+) -> None:
+    parent_path = Path(parent)
+
+    contents = get_contents(parent_path, recursive)
+    normalize_contents(parent_path, contents, dry_run, file_only)
+
+
+def main() -> None:
     parser = ArgumentParser(
-        description="Normalizes files and directories recursively to snake_case"
+        description="normalize files and directories to kebab-case"
     )
     parser.add_argument(
         "directory",
-        help="Directory to be recursively normalized"
+        help="directory to be normalized"
+    )
+    parser.add_argument(
+        "-f",
+        "--file-only",
+        help="normalize files only, not directories",
+        action="store_true"
+    )
+    parser.add_argument(
+        "-r",
+        "--recursive",
+        help="normalize recursively",
+        action="store_true"
     )
     parser.add_argument(
         "-n",
         "--dry-run",
-        help="Prints what would be renamed without renaming",
-        dest="dry_run",
+        help="prints what would be renamed without renaming",
         action="store_true"
     )
     args = parser.parse_args()
 
-    normalize(args.directory, args.dry_run)
+    try:
+        normalize(args.directory, args.dry_run, args.file_only, args.recursive)
+    except Exception as e:
+        print(f"error: {e}")
 
 
 if __name__ == '__main__':
