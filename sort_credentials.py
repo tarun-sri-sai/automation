@@ -1,5 +1,6 @@
 import sys
-import yaml
+from io import StringIO
+from ruamel.yaml import YAML
 from pathlib import Path
 from argparse import ArgumentParser
 from lib.encryption import decrypt, encrypt
@@ -9,14 +10,21 @@ def walk_credentials(parent_path, recipient, pattern=None):
     if not pattern:
         pattern = "*"
 
+    yaml = YAML()
+    yaml.default_flow_style = False
+    yaml.sort_keys = True
+    yaml.indent(mapping=4, sequence=4, offset=4)
+
     files = [f for f in Path(parent_path).rglob(pattern) if f.is_file()]
     for file in files:
         try:
             with open(file, "rb") as f:
                 contents = decrypt(f.read(), recipient).decode("utf-8")
 
-            data = yaml.safe_load(contents)
-            sorted_contents = yaml.safe_dump(data, indent=4, sort_keys=True)
+            data = yaml.load(contents)
+            stream = StringIO()
+            yaml.dump(data, stream)
+            sorted_contents = stream.getvalue()
 
             if contents.replace("\r", "") != sorted_contents:
                 print(f"{file} needs to be sorted")
