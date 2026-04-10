@@ -2,8 +2,8 @@ import hashlib
 import json
 import sys
 from argparse import ArgumentParser
-from fnmatch import fnmatch
 from pathlib import Path
+from lib.filesystem import is_excluded
 
 
 def file_hash(path: Path, chunk_size: int = 1024 * 1024) -> str:
@@ -14,16 +14,6 @@ def file_hash(path: Path, chunk_size: int = 1024 * 1024) -> str:
             h.update(chunk)
 
     return h.hexdigest()
-
-
-def is_excluded(root: Path, entry: Path, excludes: list[str]) -> bool:
-    relative_path = entry.relative_to(root).as_posix()
-
-    for pattern in excludes:
-        if fnmatch(entry.name, pattern) or fnmatch(relative_path, pattern):
-            return True
-
-    return False
 
 
 def walk(root: Path, path: Path, excludes: list[str]) -> dict:

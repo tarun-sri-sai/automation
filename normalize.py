@@ -2,6 +2,7 @@ import re
 import shutil
 from argparse import ArgumentParser
 from pathlib import Path
+from lib.filesystem import is_excluded
 
 
 def convert_to_kebab_case(source_string: str) -> str:
@@ -10,12 +11,20 @@ def convert_to_kebab_case(source_string: str) -> str:
     return "-".join(lowercase)
 
 
-def get_contents(parent: Path, recursive: bool) -> dict[str, None | dict]:
+def get_contents(
+    root: Path,
+    parent: Path,
+    recursive: bool,
+    exclude: list[str]
+) -> dict[str, None | dict]:
     contents = {}
     for item in parent.iterdir():
+        if is_excluded(root, item, exclude):
+            continue
+
         if item.is_dir():
             contents[item.name] = (
-                get_contents(item, recursive)
+                get_contents(root, item, recursive, exclude)
                 if recursive
                 else {}
             )
@@ -97,11 +106,12 @@ def normalize(
     parent: str,
     dry_run: bool,
     file_only: bool,
-    recursive: bool
+    recursive: bool,
+    exclude: list[str]
 ) -> None:
     parent_path = Path(parent)
 
-    contents = get_contents(parent_path, recursive)
+    contents = get_contents(parent_path, parent_path, recursive, exclude)
     normalize_contents(parent_path, contents, dry_run, file_only)
 
 
@@ -131,10 +141,24 @@ def main() -> None:
         help="prints what would be renamed without renaming",
         action="store_true"
     )
+    parser.add_argument(
+        "-x",
+        "--exclude",
+        action="append",
+        default=[],
+        help="exclude files or directories using glob pattern (repeatable)",
+    )
+
     args = parser.parse_args()
 
     try:
-        normalize(args.directory, args.dry_run, args.file_only, args.recursive)
+        normalize(
+            args.directory,
+            args.dry_run,
+            args.file_only,
+            args.recursive,
+            args.exclude
+        )
     except Exception as e:
         print(f"error: {e}")
 
