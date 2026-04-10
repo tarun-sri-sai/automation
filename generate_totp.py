@@ -1,7 +1,7 @@
 import pyotp
 import time
 from argparse import ArgumentParser
-from lib.encryption import decrypt, read_password
+from lib.encryption import decrypt
 from rich.console import Console
 from rich.live import Live
 from rich.table import Table
@@ -42,16 +42,13 @@ def get_totp(totp_url):
         raise
 
 
-def get_totp_urls(file_path, encrypted):
+def get_totp_urls(file_path, encrypted, recipient):
     try:
-        with open(file_path, "r") as f:
+        with open(file_path, "rb") as f:
             data = f.read()
 
         if encrypted:
-            password = read_password(
-                "Enter the password to decrypt the encryption (OpenPGP): "
-            )
-            data = decrypt(data, password)
+            data = decrypt(data, recipient).decode("utf-8")
         
         return [l.strip() for l in data.split("\n") if l.strip()]
     except Exception as e:
@@ -77,9 +74,15 @@ def main():
             action="store_true",
             help="Whether the file is encrypted (OpenPGP)"
         )
+        parser.add_argument(
+            "-r",
+            "--recipient",
+            type=str,
+            help="recipient to use for decryption (required if file is encrypted)"
+        )
         args = parser.parse_args()
 
-        totp_urls = get_totp_urls(args.file, args.encrypted)
+        totp_urls = get_totp_urls(args.file, args.encrypted, args.recipient)
 
         headers = ["Issuer", "Email", "TOTP"]
 

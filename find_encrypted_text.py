@@ -3,7 +3,7 @@ import re
 import sys
 import argparse
 from pathlib import Path
-from lib.encryption import decrypt, read_password
+from lib.encryption import decrypt
 
 
 def find_files(directory, extension, recursive):
@@ -14,10 +14,10 @@ def find_files(directory, extension, recursive):
         return path.glob(f"*{extension}")
 
 
-def decrypt_file(file_path, password):
+def decrypt_file(file_path, recipient):
     try:
-        with open(file_path, 'r') as f:
-            return decrypt(f.read(), password)
+        with open(file_path, 'rb') as f:
+            return decrypt(f.read(), recipient).decode('utf-8')
     except Exception as e:
         print(f"Error decrypting {file_path}: {e}", file=sys.stderr)
         return None
@@ -38,6 +38,7 @@ def search_in_content(file_path, content, pattern):
 def main():
     parser = argparse.ArgumentParser(
         description='Search for pattern in encrypted PGP files')
+    parser.add_argument('recipient', type=str, help='recipient to use for decryption')
     parser.add_argument('directory', type=str, help='Directory to search')
     parser.add_argument('pattern', type=str, help='Pattern to search for')
     parser.add_argument('-e', '--extension', default='.asc',
@@ -47,11 +48,9 @@ def main():
 
     args = parser.parse_args()
 
-    password = read_password("Enter password: ")
-
     files = find_files(args.directory, args.extension, args.recurse)
     for file_path in files:
-        decrypted_content = decrypt_file(file_path, password)
+        decrypted_content = decrypt_file(file_path, args.recipient)
 
         if decrypted_content:
             matches = search_in_content(

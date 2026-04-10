@@ -103,7 +103,7 @@ def _validate_parents(block_data):
             curr_indents.pop()
 
         if (
-            block["level"] != curr_indents[-1] and 
+            block["level"] != curr_indents[-1] and
             block["level"] - 1 != curr_indents[-1]
         ):
             print(

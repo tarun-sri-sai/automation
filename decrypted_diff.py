@@ -6,7 +6,7 @@ from git import Repo
 from git.exc import BadName
 from git.objects import Blob
 
-from lib.encryption import decrypt, read_password
+from lib.encryption import decrypt
 
 
 def resolve_diff_commits(repo, revspec):
@@ -54,6 +54,14 @@ def main():
     )
 
     parser.add_argument(
+        "-r",
+        "--recipient",
+        required=True,
+        type=str,
+        help="recipient to use for decryption"
+    )
+
+    parser.add_argument(
         "revisions",
         nargs="+",
         help="revision spec (same formats supported by git diff)"
@@ -86,14 +94,14 @@ def main():
     encrypted_left = get_file_contents(repo, left_rev, args.path)
     encrypted_right = get_file_contents(repo, right_rev, args.path)
 
-    password = read_password("password: ")
+    recipient = args.recipient
 
     decrypted_left = (
-        decrypt(encrypted_left, password).replace("\r\n", "\n")
+        decrypt(encrypted_left, recipient).decode("utf-8").replace("\r\n", "\n")
         if encrypted_left is not None else ""
     )
     decrypted_right = (
-        decrypt(encrypted_right, password).replace("\r\n", "\n")
+        decrypt(encrypted_right, recipient).decode("utf-8").replace("\r\n", "\n")
         if encrypted_right is not None else ""
     )
 
