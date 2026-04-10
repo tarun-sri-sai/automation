@@ -7,6 +7,12 @@ venv
 # ignore python bytecode files
 *.pyc
 
+# ignore jupyter notebooks used for testing
+*.ipynb
+
+# ignore inputs
+inputs/
+
 # ignore adb temp files
 usagestats.txt
 usagestats_yearly_packages.csv
