@@ -22,8 +22,8 @@ try {
     Write-LogMessage -LogPath $logPath -Message "Starting restore from $BackupPath."
 
     $encryptedFile = Get-ChildItem -Path $BackupPath -Filter "*.7z.enc" |
-    Sort-Object LastWriteTime |
-    Select-Object -Last 1
+        Sort-Object LastWriteTime |
+        Select-Object -Last 1
 
     if (-not $encryptedFile) {
         throw "No encrypted backup (*.7z.enc) found in $BackupPath."
@@ -55,9 +55,9 @@ try {
     Remove-Item -Force $decryptedZip
 
     Write-LogMessage -LogPath $logPath -Message "Restore completed successfully."
-}
-catch {
+} catch {
     Write-LogMessage -LogPath $logPath -Message "Restore failed: $_" -Level 1
     Write-LogException -LogPath $logPath -Exception $_
     exit 1
 }
+

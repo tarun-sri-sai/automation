@@ -12,7 +12,7 @@ function Get-PasswordFromFile {
     $passwordPtr = $null 
 
     try {
-        if (-Not (Test-Path -Type Leaf $PassFile)) {
+        if (-not (Test-Path -Type Leaf $PassFile)) {
             Write-LogMessage -LogPath $LogPath -Message "$PassFile password file does not exist." -Level 3
             return $null
         }
@@ -25,12 +25,10 @@ function Get-PasswordFromFile {
 
         Write-LogMessage -LogPath $LogPath -Message "Password file is empty." -Level 3
         return $null
-    }
-    catch {
+    } catch {
         Write-LogMessage -LogPath $LogPath -Message "Error while decoding password from ${PassFile}:" -Level 1
         Write-LogException -LogPath $LogPath -Exception $_
-    }
-    finally {
+    } finally {
         if ($null -ne $passwordPtr) {
             [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPtr)
         }
@@ -52,14 +50,13 @@ function Read-PasswordFromInput {
         $confirmPasswordPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto($confirmPasswordPtr)
 
         $result = $passwordPlain -eq $confirmPasswordPlain
-        if (-Not $result) {
+        if (-not $result) {
             Write-Error "Passwords don't match. Try again"
             return $null
         }
 
         return $password
-    }
-    finally {
+    } finally {
         if ($null -ne $passwordPtr) {
             [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPtr)
         }
@@ -71,3 +68,4 @@ function Read-PasswordFromInput {
 }
 
 Export-ModuleMember -Function Get-PasswordFromFile, Read-PasswordFromInput
+

@@ -35,8 +35,7 @@ function Get-FilesToRemove {
                 $totalFilesToRemove += $file
             }
         }
-    }
-    else {
+    } else {
         if ($files.Count -gt $Versions) {
             $totalFilesToRemove = $files | Select-Object -First ($files.Count - $Versions) | Select-Object -ExpandProperty FullName
         }
@@ -46,3 +45,4 @@ function Get-FilesToRemove {
 }
 
 Export-ModuleMember -Function Join-Paths, Get-FilesToRemove
+

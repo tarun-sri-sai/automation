@@ -134,8 +134,7 @@ function Get-Subnet {
 
         if ($All) {
             $result = $allIPs | Sort-Object { Get-NaturalSortKey $_ }
-        }
-        else {
+        } else {
             Write-Host "Scanning subnet $Subnet ($totalIPs addresses)..."
     
             $reachableIPs = New-Object 'System.Collections.Concurrent.ConcurrentBag[string]'
@@ -154,15 +153,12 @@ function Get-Subnet {
                         if ($connect.Wait(2000) -and $tcp.Connected) {
                             $reachableIPs.Add($ip)
                         }
-                    }
-                    catch {
+                    } catch {
                         Write-Error "port scan failed for [${ip}:$port]: $_"
-                    }
-                    finally {
+                    } finally {
                         $tcp.Dispose()
                     }
-                }
-                elseif (Test-Connection -ComputerName $ip -Count $count -Quiet) {
+                } elseif (Test-Connection -ComputerName $ip -Count $count -Quiet) {
                     $reachableIPs.Add($ip)
                 }
             }
@@ -240,8 +236,7 @@ function Get-Subnet {
 
                 Write-Host "Found $($unreachableIPs.Count) unreachable IP addresses."
                 $result = $unreachableIPs | Sort-Object { Get-NaturalSortKey $_ }
-            }
-            else {
+            } else {
                 Write-Host "Found $($reachableIPs.Count) reachable IP addresses."
                 $result = $reachableIPs.ToArray() | Sort-Object { Get-NaturalSortKey $_ }
             }
@@ -254,8 +249,7 @@ function Get-Subnet {
                 param($ip)
                 try {
                     return [System.Net.Dns]::GetHostEntry($ip).HostName
-                }
-                catch {
+                } catch {
                     return $ip
                 }
             }
@@ -334,10 +328,10 @@ function Get-Subnet {
         }
 
         return $result
-    } 
-    catch {
+    } catch {
         Write-Error "Error scanning subnet: $_"
     }
 }
 
 Export-ModuleMember -Function Get-Subnet
+

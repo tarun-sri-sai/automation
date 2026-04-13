@@ -65,11 +65,9 @@ $scriptBlock = {
                 -ErrorAction Stop | Out-Null
 
             Test-Path "${driveName}:\"
-        }
-        catch {
+        } catch {
             $false
-        }
-        finally {
+        } finally {
             if (Get-PSDrive -Name $driveName -ErrorAction SilentlyContinue) {
                 Remove-PSDrive -Name $driveName -Force
             }
@@ -138,3 +136,4 @@ $pool.Close()
 $pool.Dispose()
 
 $results.ToArray() | Sort-Object { Get-NaturalSortKey $_ }
+

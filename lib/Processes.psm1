@@ -18,12 +18,10 @@ function Stop-Processes {
             }
      
             Write-LogMessage -LogPath $logPath -Message "$(${processes}.Length) $Name processes have been killed."
-        }
-        else {
+        } else {
             Write-LogMessage -LogPath $logPath -Message "No $Name processes found."
         }
-    }
-    catch {
+    } catch {
         Write-LogMessage -LogPath $logPath -Message "An error occurred while stopping ${name}: $_." -Level 1
         Write-LogException -LogPath $LogPath -Exception $_
         exit 1
@@ -31,3 +29,4 @@ function Stop-Processes {
 }
 
 Export-ModuleMember -Function Stop-Processes
+

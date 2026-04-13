@@ -1,6 +1,7 @@
 $lines = quser.exe | Select-Object -Skip 1
 foreach ($line in $lines) {
-    if ($line -match '^>') {                # Ignore my session
+    if ($line -match '^>') {
+        # Ignore my session
         continue
     }
     $words = ($line -split '\s+')
@@ -8,3 +9,4 @@ foreach ($line in $lines) {
     Write-Output "logging off session ID $session"
     logoff $session
 }
+

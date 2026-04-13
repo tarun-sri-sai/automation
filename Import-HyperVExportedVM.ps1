@@ -51,7 +51,7 @@ try {
     Set-VMHardDiskDrive -VMName $NewName -ControllerType $vhd.ControllerType -ControllerNumber $vhd.ControllerNumber -ControllerLocation $vhd.ControllerLocation -Path $newVhdPath
 
     Write-Host "VM import and configuration completed successfully."
-}
-catch {
+} catch {
     Write-Error $_
 }
+

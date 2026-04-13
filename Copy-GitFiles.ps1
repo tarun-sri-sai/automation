@@ -18,8 +18,7 @@ $logPath = Join-Path (Join-Path $thisDirectory "logs") "$fileBaseName.log"
 
 try {
     Push-Location $RepoDirectory
-}
-catch {
+} catch {
     Write-LogMessage -LogPath $logPath -Message "$RepoDirectory is an invalid repo directory" -Level 2
     continue
 }
@@ -39,9 +38,9 @@ try {
         param($repoDir, $relativePath, $repoBaseName, $destinationPath, $logPath)
 
         $result = @{
-            File     = $relativePath
-            Status   = "unknown"
-            Message  = ""
+            File    = $relativePath
+            Status  = "unknown"
+            Message = ""
         }
 
         try {
@@ -51,8 +50,7 @@ try {
             
             if ($fileRelativeDir) {
                 $newFolder = Join-Path $destinationPath $repoBaseName $fileRelativeDir
-            }
-            else {
+            } else {
                 $newFolder = Join-Path $destinationPath $repoBaseName
             }
             
@@ -77,13 +75,11 @@ try {
                 Copy-Item -Force $fileItem.FullName $destFilePath
                 $result.Status = "copied"
                 $result.Message = "copied $relativePath to $destFilePath"
-            }
-            else {
+            } else {
                 $result.Status = "skipped"
                 $result.Message = "skipped unmodified file $relativePath"
             }
-        }
-        catch {
+        } catch {
             $result.Status = "failed"
             $result.Message = "error copying $relativePath`: $_"
         }
@@ -165,7 +161,7 @@ try {
     $skippedCount = ($copyResults | Where-Object { $_.Status -eq "skipped" }).Count
     $failedCount = ($copyResults | Where-Object { $_.Status -eq "failed" }).Count
 
-    foreach($result in $copyResults | Where-Object { $_.Status -eq "skipped" }) {
+    foreach ($result in $copyResults | Where-Object { $_.Status -eq "skipped" }) {
         Write-LogMessage -LogPath $logPath -Message $result.Message -Level 5
     }
 
@@ -175,7 +171,7 @@ try {
     }
 
     Write-LogMessage -LogPath $logPath -Message "completed ${repoName}: $copiedCount copied, $skippedCount skipped, $failedCount failed"
-}
-finally {
+} finally {
     Pop-Location
 }
+

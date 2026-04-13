@@ -39,8 +39,7 @@ try {
     $date = Get-Date -Format "yyyyMMddHHmmss"
     if ($NoSuffix) {
         $zipFile = "${ZipFileName}.${ext}"
-    }
-    else {
+    } else {
         $zipFile = "${ZipFileName}_${date}.${ext}"
     }
     $encryptedFile = "$zipFile.${encExt}"
@@ -48,8 +47,7 @@ try {
     if (Test-Path $encryptedFile) {
         Write-LogMessage -LogPath $logPath -Message "Removing existing zip file: ${encryptedFile}."
         Remove-Item -Force $zipFile
-    }
-    else {
+    } else {
         Write-LogMessage -LogPath $logPath -Message "Zip file: ${encryptedFile} does not exist."
     }
 
@@ -61,8 +59,7 @@ try {
         $excludeOptions = $Exclude | ForEach-Object { "-xr!`"$_`"" }
         $excludeOptions = $excludeOptions -join " "
         Write-LogMessage -LogPath $logPath -Message "Parsed exclude options: $excludeOptions." -Level 5
-    }
-    else {
+    } else {
         $excludeOptions = ""
     }
 
@@ -95,9 +92,9 @@ try {
     }
 
     Write-LogMessage -LogPath $logPath -Message "Back up finished for $($Paths -join ', ') to $MountPath."
-}
-catch {
+} catch {
     Write-LogMessage -LogPath $logPath -Message "Backup failed: $_." -Level 1
     Write-LogException -LogPath $logPath -Exception $_
     exit 1
 }
+

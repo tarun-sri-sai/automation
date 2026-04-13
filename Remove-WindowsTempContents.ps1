@@ -4,7 +4,7 @@ Remove-Item -Recurse -Force "$windowsTemp\*"
 
 $userDirectories = Get-ChildItem C:\Users | ForEach-Object { $_.FullName }
 
-foreach($userDir in $userDirectories) {
+foreach ($userDir in $userDirectories) {
     $tempDirectory = (Get-Item -ErrorAction SilentlyContinue "$userDir\AppData\Local\Temp")
 
     if (($null -ne $tempDirectory) -and (Test-Path -PathType Container $tempDirectory)) {
@@ -14,3 +14,4 @@ foreach($userDir in $userDirectories) {
         Write-Host "'$userDir' does not have a temp directory"
     }
 }
+

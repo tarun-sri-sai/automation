@@ -37,8 +37,7 @@ function Write-LogMessage {
     $sw = New-Object System.IO.StreamWriter($fs)
     try {
         $sw.WriteLine($logLine)
-    }
-    catch {}
+    } catch {}
     finally {
         $sw.Close()
         $fs.Close()
@@ -59,8 +58,7 @@ function Invoke-LoggedScriptBlock {
     try {
         $output = & $ScriptBlock 2>&1
         Write-LogMessage -LogPath $LogPath -Message "$($ScriptBlock.ToString().Trim()): $output" -Level $Level
-    }
-    catch {
+    } catch {
         Write-LogMessage -LogPath $LogPath -Message "$($ScriptBlock.ToString().Trim()): ERROR - $($_.Exception.Message)" -Level 2
         throw $_
     }
@@ -82,3 +80,4 @@ function Write-LogException {
 }
 
 Export-ModuleMember -Function Write-LogMessage, Invoke-LoggedScriptBlock, Write-LogException
+

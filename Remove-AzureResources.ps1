@@ -54,11 +54,9 @@ foreach ($group in @(Get-AzResourceGroup)) {
             if ($answer.ToLower() -eq "y") {
                 $ToDelete = $true
                 break
-            }
-            elseif ($answer.ToLower() -eq "n" -or $answer -eq "") {
+            } elseif ($answer.ToLower() -eq "n" -or $answer -eq "") {
                 break
-            }
-            else {
+            } else {
                 Write-Host "Please answer 'y' or 'n'. Leaving blank will default to 'n'."
             }
         }
@@ -83,3 +81,4 @@ foreach ($resource in @(Get-AzResource)) {
     Write-LogMessage -LogPath $logPath -Message "Removing resource $($resource.Name) in RG $($resource.ResourceGroupName)..."
     Remove-AzResource -ResourceId $resource.ResourceId -Force -AsJob
 }
+

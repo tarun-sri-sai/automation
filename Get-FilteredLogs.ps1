@@ -29,9 +29,9 @@ if ($Boundaries) {
 }
 Write-Host "Pattern: $pattern"
 
-foreach($file in (Get-ChildItem -Path $LogFolder -Recurse -Filter $FileFilter)) {
+foreach ($file in (Get-ChildItem -Path $LogFolder -Recurse -Filter $FileFilter)) {
     $matchedLines = @()
-    foreach($line in (Get-Content $file.FullName)) {
+    foreach ($line in (Get-Content $file.FullName)) {
         if ($line -match $pattern) {
             $ts = [datetime]::ParseExact(
                 "$($Matches[0])",
@@ -50,3 +50,4 @@ foreach($file in (Get-ChildItem -Path $LogFolder -Recurse -Filter $FileFilter)) 
         Add-Content -Encoding utf8 -Path $OutputFile -Value $matchedLines
     }
 }
+
