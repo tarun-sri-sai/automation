@@ -33,7 +33,15 @@ def decrypt(encrypted_blob: bytes, recipient: str) -> bytes:
 def encrypt(plaintext: str, file_path: str, recipient: str) -> bytes:
     _is_gpg_available()
     _run_gpg(
-        ["--encrypt", "--armor", "--recipient", recipient, "--output", file_path, "-"], 
+        [
+            "--encrypt",
+            "--armor",
+            "--recipient",
+            recipient,
+            "--output",
+            file_path,
+            "-"
+        ],
         input=plaintext.encode("utf-8")
     )
 

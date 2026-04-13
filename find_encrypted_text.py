@@ -38,7 +38,11 @@ def search_in_content(file_path, content, pattern):
 def main():
     parser = argparse.ArgumentParser(
         description='Search for pattern in encrypted PGP files')
-    parser.add_argument('recipient', type=str, help='recipient to use for decryption')
+    parser.add_argument(
+        'recipient',
+        type=str,
+        help='recipient to use for decryption'
+    )
     parser.add_argument('directory', type=str, help='Directory to search')
     parser.add_argument('pattern', type=str, help='Pattern to search for')
     parser.add_argument('-e', '--extension', default='.asc',

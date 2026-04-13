@@ -78,7 +78,10 @@ def main():
         minmax_scale(df["totalTimeUsedSeconds"]) * 0.5
     )
 
-    top_df = df.sort_values(by=["weightedScore"], ascending=False).head(n=args.top_n)
+    top_df = df.sort_values(
+        by=["weightedScore"],
+        ascending=False
+    ).head(n=args.top_n)
     top_df["app"] = top_df["package"].apply(scrape_app_name)
 
     top_df[["package", "app"]].to_csv(

@@ -23,7 +23,10 @@ def notion_request(method, url, payload=None):
     while True:
         r = requests.request(method, url, headers=HEADERS, json=payload)
         if r.status_code == 429:
-            print(f"WARN\trate limited on {url}, waiting {RATE_LIMIT_SLEEP * 10}s", file=sys.stderr)
+            print(
+                f"WARN\trate limited on {url}, waiting {RATE_LIMIT_SLEEP * 10}s",
+                file=sys.stderr
+            )
             time.sleep(RATE_LIMIT_SLEEP * 10)
             continue
 
@@ -125,7 +128,10 @@ def main():
 
         # this prevents retrieval duplication
         if obj["parent"]["type"] != "workspace":
-            print(f"DEBUG\tskipping non-root object: {obj_id}", file=sys.stderr)
+            print(
+                f"DEBUG\tskipping non-root object: {obj_id}",
+                file=sys.stderr
+            )
             continue
 
         if obj["object"] == "page":

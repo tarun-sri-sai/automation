@@ -48,7 +48,9 @@ def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=No
         if visibility in ["public", "private"]:
             params["visibility"] = visibility
     else:
-        logging.info("Unauthenticated requests can only access public repositories.")
+        logging.info(
+            "Unauthenticated requests can only access public repositories."
+        )
         params["visibility"] = "public"
 
     logging.info(f"Params: {json.dumps(params, indent=2)}")
@@ -58,10 +60,14 @@ def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=No
         while url:
             logging.info(f"Requesting endpoint {url} for repos.")
             response = requests.get(url, headers=headers, params=params)
-            logging.info(f"Status for discovery response: {response.status_code}.")
+            logging.info(
+                f"Status for discovery response: {response.status_code}."
+            )
 
             if response.status_code == requests.codes.unauthorized:
-                logging.warning("You may need to provide a valid GitHub token.")
+                logging.warning(
+                    "You may need to provide a valid GitHub token."
+                )
 
             if response.status_code != requests.codes.ok:
                 logging.error(f"API {response.status_code}: {response.text}")
@@ -71,13 +77,17 @@ def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=No
                 get_repo_url(repo, ssh_host, use_ssh)
                 for repo in response.json()
             ]
-            logging.info(f"Discovered {len(curr_repos)} repos in current page.")
+            logging.info(
+                f"Discovered {len(curr_repos)} repos in current page."
+            )
             repo_urls += curr_repos
 
             url = response.links.get("next", {}).get("url")
             if url:
                 sleep_secs = 10
-                logging.info(f"Sleeping for {sleep_secs}s before requesting {url}.")
+                logging.info(
+                    f"Sleeping for {sleep_secs}s before requesting {url}."
+                )
                 time.sleep(sleep_secs)
 
         return repo_urls
@@ -92,13 +102,19 @@ def update_local_clones(repos_dir, repo_urls):
         repo_path = os.path.join(repos_dir, repo_name)
 
         if os.path.exists(repo_path):
-            logging.info(f"Repository {repo_name} already exists. "
-                     f"Pulling latest changes.")
+            logging.info(
+                f"Repository {repo_name} already exists. "
+                f"Pulling latest changes."
+            )
         else:
             logging.info(f"Cloning repository {repo_name}.")
             subprocess.run(["git", "clone", url, repo_path], check=True)
         try:
-            subprocess.run(["git", "fetch", "--all"], cwd=repo_path, check=True)
+            subprocess.run(
+                ["git", "fetch", "--all"],
+                cwd=repo_path,
+                check=True
+            )
         except subprocess.CalledProcessError as e:
             logging.error(f"Error while updating latest changes: {e}.")
 
@@ -109,8 +125,8 @@ def main():
 
     setup_logger(
         os.path.join(
-            work_dir, 
-            "logs", 
+            work_dir,
+            "logs",
             os.path.splitext(script_file)[0] + ".log"
         )
     )

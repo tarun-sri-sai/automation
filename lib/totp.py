@@ -11,7 +11,7 @@ def get_totp_urls(file_path, encrypted, recipient):
 
         if encrypted:
             data = decrypt(data, recipient).decode("utf-8")
-        
+
         return [l.strip() for l in data.split("\n") if l.strip()]
     except Exception as e:
         print(f"Error while decrypting TOTP urls from {file_path}: {e}")

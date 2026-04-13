@@ -92,7 +92,10 @@ def _validate_parents(block_data):
 
         if blocks_since_heading == 0:
             if block.get("level") > 0:
-                print(f"invalid first task for {curr_heading}", file=sys.stderr)
+                print(
+                    f"invalid first task for {curr_heading}",
+                    file=sys.stderr
+                )
                 sys.exit(1)
 
             curr_indents.append(0)

@@ -97,11 +97,17 @@ def main():
     recipient = args.recipient
 
     decrypted_left = (
-        decrypt(encrypted_left, recipient).decode("utf-8").replace("\r\n", "\n")
+        decrypt(
+            encrypted_left,
+            recipient
+        ).decode("utf-8").replace("\r\n", "\n")
         if encrypted_left is not None else ""
     )
     decrypted_right = (
-        decrypt(encrypted_right, recipient).decode("utf-8").replace("\r\n", "\n")
+        decrypt(
+            encrypted_right,
+            recipient
+        ).decode("utf-8").replace("\r\n", "\n")
         if encrypted_right is not None else ""
     )
 

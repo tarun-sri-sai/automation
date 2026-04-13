@@ -48,8 +48,8 @@ def main():
 
     setup_logger(
         os.path.join(
-            work_dir, 
-            "logs", 
+            work_dir,
+            "logs",
             os.path.splitext(script_file)[0] + ".log"
         )
     )

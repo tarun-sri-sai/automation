@@ -39,8 +39,14 @@ def walk_credentials(parent_path, recipient, pattern=None):
 
 def main():
     parser = ArgumentParser(description="sort yaml credentials")
-    parser.add_argument("directory", help="directory containing credential files")
-    parser.add_argument("recipient", help="recipient to use for decryption and encryption")
+    parser.add_argument(
+        "directory",
+        help="directory containing credential files"
+    )
+    parser.add_argument(
+        "recipient",
+        help="recipient to use for decryption and encryption"
+    )
     parser.add_argument("-f", "--filter", help="glob pattern to match files")
 
     args = parser.parse_args()

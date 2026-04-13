@@ -72,8 +72,8 @@ def main() -> int:
 
     setup_logger(
         os.path.join(
-            work_dir, 
-            "logs", 
+            work_dir,
+            "logs",
             os.path.splitext(script_file)[0] + ".log"
         )
     )
@@ -86,19 +86,25 @@ def main() -> int:
         target_date = dt.date.today().strftime("%Y%m%d")
 
         if not backup_root.exists() or not backup_root.is_dir():
-            logging.error("backup root not found or not a directory: %s", backup_root)
+            logging.error(
+                f"backup root not found or not a directory: {backup_root}"
+            )
             return 2
 
         dated_folders = list_dated_folders(backup_root)
         if not dated_folders:
-            logging.error("no dated folders found in %s", backup_root)
+            logging.error(f"no dated folders found in {backup_root}")
             return 3
 
         target_folder = backup_root / target_date
-        source_folders = [folder for folder in dated_folders if folder.name != target_date]
+        source_folders = [
+            folder for folder in dated_folders if folder.name != target_date
+        ]
 
         if not source_folders:
-            logging.error("no source dated folders found after excluding target date")
+            logging.error(
+                "no source dated folders found after excluding target date"
+            )
             return 3
 
         latest_by_name = build_latest_index(source_folders)
@@ -124,34 +130,33 @@ def main() -> int:
                 if files_identical(source_path, destination_path):
                     skipped += 1
                     logging.debug(
-                        "SKIP  %s (already identical to source date %s)",
-                        filename,
-                        source_date,
+                        f"SKIP  {filename} (already identical to source date "
+                        f"{source_date})"
                     )
                     continue
 
                 overwritten += 1
-                logging.debug("OVERWRITE %s <- %s", filename, source_date)
+                logging.debug(f"OVERWRITE {filename} <- {source_date}")
                 if not args.dry_run:
                     shutil.copy2(source_path, destination_path)
                 continue
 
             copied += 1
-            logging.debug("COPY  %s <- %s", filename, source_date)
+            logging.debug(f"COPY  {filename} <- {source_date}")
             if not args.dry_run:
                 shutil.copy2(source_path, destination_path)
 
-        scanned_text = ", ".join(folder.name for folder in source_folders)
+        scanned = ", ".join(folder.name for folder in source_folders)
         logging.info("Synthetic full backup summary")
-        logging.info("backup root     : %s", backup_root)
-        logging.info("target folder   : %s", target_folder)
-        logging.info("target created  : %s", "yes" if created_target else "no")
-        logging.info("source folders  : %s (%s)", len(source_folders), scanned_text)
-        logging.info("unique filenames: %s", len(latest_by_name))
-        logging.info("copied          : %s", copied)
-        logging.info("overwritten     : %s", overwritten)
-        logging.info("skipped         : %s", skipped)
-        logging.info("dry run         : %s", "yes" if args.dry_run else "no")
+        logging.info(f"backup root     : {backup_root}")
+        logging.info(f"target folder   : {target_folder}")
+        logging.info(f"target created  : {'yes' if created_target else 'no'}")
+        logging.info(f"source folders  : {len(source_folders)} ({scanned})")
+        logging.info(f"unique filenames: {len(latest_by_name)}")
+        logging.info(f"copied          : {copied}")
+        logging.info(f"overwritten     : {overwritten}")
+        logging.info(f"skipped         : {skipped}")
+        logging.info(f"dry run         : {'yes' if args.dry_run else 'no'}")
 
         return 0
     except Exception:

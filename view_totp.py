@@ -27,7 +27,7 @@ def main():
     args = parser.parse_args()
 
     totp_urls = get_totp_urls(args.file, args.encrypted, args.recipient)
-    
+
     console = Console()
     console.print(build_table(totp_urls, raw=True))
 
