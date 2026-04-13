@@ -34,7 +34,7 @@ def main():
         totp_urls = get_totp_urls(args.file, args.encrypted, args.recipient)
         with Live(build_table(totp_urls), refresh_per_second=1, console=console) as live:
             while True:
-                time.sleep(15)
+                time.sleep(1)
                 live.update(build_table(totp_urls))
 
     except Exception as e:
