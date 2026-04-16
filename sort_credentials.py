@@ -3,10 +3,10 @@ from io import StringIO
 from ruamel.yaml import YAML
 from pathlib import Path
 from argparse import ArgumentParser
-from lib.encryption import decrypt, encrypt
+from lib.encryption import decrypt, encrypt, read_password
 
 
-def walk_credentials(parent_path, recipient, pattern=None):
+def walk_credentials(parent_path, password, pattern=None):
     if not pattern:
         pattern = "*"
 
@@ -19,7 +19,7 @@ def walk_credentials(parent_path, recipient, pattern=None):
     for file in files:
         try:
             with open(file, "rb") as f:
-                contents = decrypt(f.read(), recipient).decode("utf-8")
+                contents = decrypt(f.read(), password)
 
             data = yaml.load(contents)
             stream = StringIO()
@@ -29,7 +29,8 @@ def walk_credentials(parent_path, recipient, pattern=None):
             if contents.replace("\r", "") != sorted_contents:
                 print(f"{file} needs to be sorted")
 
-                encrypt(sorted_contents, file, recipient)
+                with open(file, "wb") as f:
+                    f.write(encrypt(sorted_contents, password))
 
         except AttributeError:
             print(f"{file} is not valid yaml", file=sys.stderr)
@@ -43,15 +44,13 @@ def main():
         "directory",
         help="directory containing credential files"
     )
-    parser.add_argument(
-        "recipient",
-        help="recipient to use for decryption and encryption"
-    )
     parser.add_argument("-f", "--filter", help="glob pattern to match files")
 
     args = parser.parse_args()
 
-    walk_credentials(args.directory, args.recipient, args.filter)
+    password = read_password("password: ")
+
+    walk_credentials(args.directory, password, args.filter)
 
 
 if __name__ == '__main__':
