@@ -136,4 +136,3 @@ $pool.Close()
 $pool.Dispose()
 
 $results.ToArray() | Sort-Object { Get-NaturalSortKey $_ }
-

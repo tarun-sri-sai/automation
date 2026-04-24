@@ -60,4 +60,3 @@ try {
     Write-LogException -LogPath $logPath -Exception $_
     exit 1
 }
-

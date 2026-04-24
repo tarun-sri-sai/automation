@@ -15,4 +15,3 @@ $freeGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
 $usedGB = [math]::Round($totalGB - $freeGB, 2)
 
 Write-Output ("Total: {0} GB  Used: {1} GB  Free: {2} GB" -f $totalGB, $usedGB, $freeGB)
-

@@ -43,4 +43,3 @@ Write-Host "INFO`tCommit message: $trimmedFileStatuses"
 # Commit the changes
 git commit -m $trimmedFileStatuses
 Write-Host "INFO`tgit commit executed"
-

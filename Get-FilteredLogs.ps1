@@ -50,4 +50,3 @@ foreach ($file in (Get-ChildItem -Path $LogFolder -Recurse -Filter $FileFilter))
         Add-Content -Encoding utf8 -Path $OutputFile -Value $matchedLines
     }
 }
-

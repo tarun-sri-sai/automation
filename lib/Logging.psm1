@@ -80,4 +80,3 @@ function Write-LogException {
 }
 
 Export-ModuleMember -Function Write-LogMessage, Invoke-LoggedScriptBlock, Write-LogException
-

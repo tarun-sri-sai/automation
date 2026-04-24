@@ -9,4 +9,3 @@ foreach ($line in $lines) {
     Write-Output "logging off session ID $session"
     logoff $session
 }
-

@@ -68,4 +68,3 @@ function Read-PasswordFromInput {
 }
 
 Export-ModuleMember -Function Get-PasswordFromFile, Read-PasswordFromInput
-

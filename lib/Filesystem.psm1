@@ -45,4 +45,3 @@ function Get-FilesToRemove {
 }
 
 Export-ModuleMember -Function Join-Paths, Get-FilesToRemove
-

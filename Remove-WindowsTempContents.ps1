@@ -14,4 +14,3 @@ foreach ($userDir in $userDirectories) {
         Write-Host "'$userDir' does not have a temp directory"
     }
 }
-

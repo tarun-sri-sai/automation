@@ -81,4 +81,3 @@ foreach ($resource in @(Get-AzResource)) {
     Write-LogMessage -LogPath $logPath -Message "Removing resource $($resource.Name) in RG $($resource.ResourceGroupName)..."
     Remove-AzResource -ResourceId $resource.ResourceId -Force -AsJob
 }
-
