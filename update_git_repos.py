@@ -1,22 +1,30 @@
-import json
+import asyncio
 import logging
 import os
 import re
 import requests
-import subprocess
-import time
+import shutil
 from argparse import ArgumentParser
+from git import Repo
+from git.exc import NoSuchPathError, InvalidGitRepositoryError
 from lib.logging_util import setup_logger
 
+semaphore = asyncio.Semaphore(10)
 
-def get_repo_url(repo, ssh_host=None, use_ssh=None):
+
+async def get_repo_url(repo, ssh_host=None, use_ssh=None):
     if ssh_host:
         return re.sub(r"git@[^:]+:", f"{ssh_host}:", repo["ssh_url"])
 
     return repo["ssh_url"] if use_ssh else repo["clone_url"]
 
 
-def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=None):
+async def discover_git_repos(
+    visibility=None,
+    username=None,
+    ssh_host=None,
+    use_ssh=None
+):
     url = "https://api.github.com/user/repos"
     headers = {
         "Accept": "application/json",
@@ -49,13 +57,13 @@ def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=No
             params["visibility"] = visibility
     else:
         logging.info(
-            "Unauthenticated requests can only access public repositories."
+            "Unauthenticated requests can only access public repos."
         )
         params["visibility"] = "public"
 
-    logging.info(f"Params: {json.dumps(params, indent=2)}")
+    logging.info(f"Params: {params}")
 
-    repo_urls = []
+    repo_urls = {}
     try:
         while url:
             logging.info(f"Requesting endpoint {url} for repos.")
@@ -71,16 +79,16 @@ def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=No
 
             if response.status_code != requests.codes.ok:
                 logging.error(f"API {response.status_code}: {response.text}")
-                return []
+                return {}
 
-            curr_repos = [
-                get_repo_url(repo, ssh_host, use_ssh)
+            curr_repos = {
+                repo["name"]: await get_repo_url(repo, ssh_host, use_ssh)
                 for repo in response.json()
-            ]
+            }
             logging.info(
                 f"Discovered {len(curr_repos)} repos in current page."
             )
-            repo_urls += curr_repos
+            repo_urls = {**repo_urls, **curr_repos}
 
             url = response.links.get("next", {}).get("url")
             if url:
@@ -88,38 +96,61 @@ def discover_git_repos(visibility=None, username=None, ssh_host=None, use_ssh=No
                 logging.info(
                     f"Sleeping for {sleep_secs}s before requesting {url}."
                 )
-                time.sleep(sleep_secs)
+                await asyncio.sleep(sleep_secs)
 
         return repo_urls
     except Exception as e:
         logging.error(f"Error while discovering repos: {e}.")
-        return []
+        return {}
 
 
-def update_local_clones(repos_dir, repo_urls):
-    for url in repo_urls:
-        repo_name = os.path.basename(url).replace(".git", "")
-        repo_path = os.path.join(repos_dir, repo_name)
+def _update_local_clone(repo_name, repo_path, repo_url):
+    repo_obj = None
+    try:
+        repo_obj = Repo(repo_path)
+    except NoSuchPathError:
+        logging.info(f"{repo_name}: Cloning repo.")
+        repo_obj = Repo.clone_from(repo_url, repo_path)
+    except InvalidGitRepositoryError:
+        logging.warning(
+            f"{repo_name}: Directory {repo_path} exists but is not a repo. "
+            f"Re-cloning."
+        )
+        shutil.rmtree(repo_path)
+        repo_obj = Repo.clone_from(repo_url, repo_path)
 
-        if os.path.exists(repo_path):
-            logging.info(
-                f"Repository {repo_name} already exists. "
-                f"Pulling latest changes."
-            )
-        else:
-            logging.info(f"Cloning repository {repo_name}.")
-            subprocess.run(["git", "clone", url, repo_path], check=True)
+    logging.info(f"{repo_name}: Fetching latest changes.")
+    for remote in repo_obj.remotes:
         try:
-            subprocess.run(
-                ["git", "fetch", "--all"],
-                cwd=repo_path,
-                check=True
-            )
-        except subprocess.CalledProcessError as e:
-            logging.error(f"Error while updating latest changes: {e}.")
+            logging.info(f"{repo_name}: Updating remote {remote}.")
+            remote.fetch()
+        except Exception as e:
+            logging.error(f"{repo_name}: Error updating {remote}: {e}.")
+
+    logging.info(f"{repo_name}: Successfully updated.")
 
 
-def main():
+async def update_local_clone(repo_name, repo_path, repo_url):
+    async with semaphore:
+        await asyncio.to_thread(
+            _update_local_clone,
+            repo_name,
+            repo_path,
+            repo_url
+        )
+
+
+async def update_local_clones(repos_dir, repo_urls):
+    tasks = []
+    for name, url in repo_urls.items():
+        repo_path = os.path.join(repos_dir, name)
+
+        tasks.append(update_local_clone(name, repo_path, url))
+
+    await asyncio.gather(*tasks)
+
+
+async def main():
     work_dir = os.path.dirname(__file__)
     script_file = os.path.basename(__file__)
 
@@ -163,11 +194,11 @@ def main():
         )
         parser.add_argument(
             "repos_dir",
-            help="Directory to clone/update repositories into"
+            help="Directory to clone/update repos into"
         )
         args = parser.parse_args()
 
-        repo_urls = discover_git_repos(
+        repo_urls = await discover_git_repos(
             args.visibility,
             args.username,
             args.ssh_host,
@@ -176,13 +207,13 @@ def main():
 
         if args.dry_run:
             logging.info("Dry run mode - discovered repo URLs:")
-            logging.info(json.dumps(repo_urls, indent=2))
+            logging.info(repo_urls)
         else:
-            update_local_clones(args.repos_dir, repo_urls)
+            await update_local_clones(args.repos_dir, repo_urls)
     except Exception as e:
         logging.critical(f"Error while updating git repos: {e}.")
         raise
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
