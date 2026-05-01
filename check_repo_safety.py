@@ -1,24 +1,41 @@
+import logging
 from argparse import ArgumentParser
 from git import Repo, InvalidGitRepositoryError
 from pathlib import Path
+from lib.logging_util import setup_logger
+
+
+def init_logger():
+    script_file_path = Path(__file__)
+    work_dir = script_file_path.parent
+    script_name = script_file_path.stem
+
+    setup_logger(work_dir / "logs" / f"{script_name}.log")
+    logging.getLogger()
 
 
 def check_repo_safety(repo: Repo, repo_name: str):
-    is_dirty = repo.is_dirty()
+    logging.debug(f"checking repo safety for {repo_name}")
+    repo_status = {}
+    
+    repo_status["is_dirty"] = repo.is_dirty()
 
     log_output = repo.git.log('--branches', '--not', '--remotes', '--oneline')
-    unpushed_commits = len(log_output.splitlines())
+    repo_status["unpushed_commits"] = len(log_output.splitlines())
 
-    if not (is_dirty or unpushed_commits):
+    if not any(repo_status.values()):
         return
 
-    print(f"{repo_name}:")
-
-    if is_dirty:
-        print(f"  - has uncommitted changes")
-
-    if unpushed_commits:
-        print(f"  - [{unpushed_commits}] unpushed commits")
+    repo_status_message = " ".join(
+        (
+            f"{k}"
+            if isinstance(v, bool)
+            else f"{k}={v}"
+        )
+        for k, v in repo_status.items()
+        if v
+    )
+    logging.info(f"{repo_name}: {repo_status_message}")
 
 
 def validate_repos(directory: Path):
@@ -29,13 +46,15 @@ def validate_repos(directory: Path):
         try:
             repo = Repo(item)
         except InvalidGitRepositoryError:
-            print(f"the directory [{item}] is not a Git repo")
+            logging.error(f"the directory [{item}] is not a git repo")
             continue
 
         check_repo_safety(repo, item.name)
 
 
 def main():
+    init_logger()
+
     parser = ArgumentParser(
         "check_repo_safety",
         description="checks whether the local Git repos are safe to delete"
