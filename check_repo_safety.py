@@ -17,7 +17,7 @@ def init_logger():
 def check_repo_safety(repo: Repo, repo_name: str):
     logging.debug(f"checking repo safety for {repo_name}")
     repo_status = {}
-    
+
     repo_status["is_dirty"] = repo.is_dirty()
 
     log_output = repo.git.log('--branches', '--not', '--remotes', '--oneline')
