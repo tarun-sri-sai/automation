@@ -7,6 +7,10 @@ from argparse import ArgumentParser
 from lib.logging_util import setup_logger
 
 
+logging.getLogger("git").setLevel(logging.WARNING)
+logging.getLogger("git.cmd").setLevel(logging.WARNING)
+
+
 def commit_daily_copy(repo: git.Repo):
     today = datetime.date.today()
     date_fmt = "%Y-%m-%d"
