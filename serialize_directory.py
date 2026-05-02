@@ -6,17 +6,28 @@ from pathlib import Path
 from lib.filesystem import is_excluded
 
 
-def file_hash(path: Path, chunk_size: int = 1024 * 1024) -> str:
+def file_hash(
+    path: Path,
+    chunk_size: int = 1024 * 1024,
+    normalize: bool = True
+) -> str:
     h = hashlib.sha256()
 
     with path.open("rb") as f:
         while chunk := f.read(chunk_size):
+            if normalize:
+                chunk = chunk.replace(b"\r\n", b"\n")
             h.update(chunk)
 
     return h.hexdigest()
 
 
-def walk(root: Path, path: Path, excludes: list[str]) -> dict:
+def walk(
+    root: Path,
+    path: Path,
+    excludes: list[str],
+    normalize: bool = True
+) -> dict:
     node = {
         "type": "directory",
         "name": path.name or str(path),
@@ -45,7 +56,7 @@ def walk(root: Path, path: Path, excludes: list[str]) -> dict:
             node["children"].append({
                 "type": "file",
                 "name": entry.name,
-                "sha256": file_hash(entry),
+                "sha256": file_hash(entry, normalize=normalize),
             })
         else:
             node["children"].append({
@@ -56,14 +67,18 @@ def walk(root: Path, path: Path, excludes: list[str]) -> dict:
     return node
 
 
-def build_tree(root: Path, excludes: list[str]) -> dict:
+def build_tree(
+    root: Path,
+    excludes: list[str],
+    normalize: bool = False
+) -> dict:
     if not root.is_dir():
         print(f"{root.name} is not a valid path", file=sys.stderr)
         sys.exit(1)
 
     root = root.resolve()
 
-    return walk(root, root, excludes)
+    return walk(root, root, excludes, normalize=normalize)
 
 
 def main():
@@ -79,11 +94,17 @@ def main():
         default=[],
         help="exclude files or directories using glob pattern (repeatable)",
     )
+    parser.add_argument(
+        "-n",
+        "--normalize",
+        action="store_true",
+        help="normalize newlines"
+    )
 
     args = parser.parse_args()
 
     path = Path(args.path) or Path(".")
-    output = json.dumps(build_tree(path, args.exclude))
+    output = json.dumps(build_tree(path, args.exclude, args.normalize))
     print(output)
 
 
