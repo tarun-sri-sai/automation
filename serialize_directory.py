@@ -20,7 +20,6 @@ def walk(root: Path, path: Path, excludes: list[str]) -> dict:
     node = {
         "type": "directory",
         "name": path.name or str(path),
-        "path": "." if path == root else path.relative_to(root).as_posix(),
         "children": [],
     }
 
