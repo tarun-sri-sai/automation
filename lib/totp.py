@@ -1,18 +1,17 @@
 import pyotp
 from rich.table import Table
 from urllib.parse import urlparse, parse_qs, unquote
-from lib.encryption import decrypt, read_password
+from lib.encryption import decrypt
 
 
-def get_totp_urls(file_path, encrypted):
+def get_totp_urls(file_path, encrypted, recipient):
     try:
         with open(file_path, "rb") as f:
             data = f.read()
 
         if encrypted:
-            password = read_password("password: ")
-            data = decrypt(data, password)
-        
+            data = decrypt(data, recipient).decode("utf-8")
+
         return [l.strip() for l in data.split("\n") if l.strip()]
     except Exception as e:
         print(f"Error while decrypting TOTP urls from {file_path}: {e}")
