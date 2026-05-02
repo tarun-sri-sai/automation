@@ -23,12 +23,9 @@ Import-Module (Join-Path (Join-Path "$thisDirectory" "lib") "Logging.psm1")
 $fileBaseName = [System.IO.Path]::GetFileNameWithoutExtension($MyInvocation.MyCommand.Definition)
 $logPath = Join-Path (Join-Path $thisDirectory "logs") "$fileBaseName.log"
 
-$passwordFile = Join-Paths $env:USERPROFILE, $AzureApp, 'password.txt'                                      # Assume password file is stored in %USERPROFILE%\<AzureApp>\password.txt
-$password = Get-PasswordFromFile -LogPath $logPath -PassFile $passwordFile
-
 $cred = New-Object System.Management.Automation.PSCredential(
     $AzureApp,
-    (ConvertTo-SecureString -AsPlainText -Force $password)
+    (ConvertTo-SecureString -AsPlainText -Force $env:CLIENT_SECRET)
 )
 
 Write-LogMessage -LogPath $logPath -Message "Connecting to Azure for tenant $Tenant with app $AzureApp."
