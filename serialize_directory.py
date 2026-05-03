@@ -26,7 +26,8 @@ def walk(
     root: Path,
     path: Path,
     excludes: list[str],
-    normalize: bool = False
+    normalize: bool = False,
+    name_only: bool = False
 ) -> dict:
     node = {
         "type": "directory",
@@ -55,14 +56,18 @@ def walk(
                 root,
                 entry,
                 excludes,
-                normalize=normalize
+                normalize=normalize,
+                name_only=name_only
             ))
         elif entry.is_file():
-            node["children"].append({
+            file_node = {
                 "type": "file",
                 "name": entry.name,
-                "sha256": file_hash(entry, normalize=normalize),
-            })
+            }
+            if not name_only:
+                file_node["sha256"] = file_hash(entry, normalize=normalize)
+
+            node["children"].append(file_node)
         else:
             node["children"].append({
                 "type": "other",
@@ -75,7 +80,8 @@ def walk(
 def build_tree(
     root: Path,
     excludes: list[str],
-    normalize: bool = False
+    normalize: bool = False,
+    name_only: bool = False
 ) -> dict:
     if not root.is_dir():
         print(f"{root.name} is not a valid path", file=sys.stderr)
@@ -83,7 +89,7 @@ def build_tree(
 
     root = root.resolve()
 
-    return walk(root, root, excludes, normalize=normalize)
+    return walk(root, root, excludes, normalize=normalize, name_only=name_only)
 
 
 def main():
@@ -105,11 +111,22 @@ def main():
         action="store_true",
         help="normalize newlines"
     )
+    parser.add_argument(
+        "-N",
+        "--name-only",
+        action="store_true",
+        help="output names only without file hashes"
+    )
 
     args = parser.parse_args()
 
     path = Path(args.path) or Path(".")
-    output = json.dumps(build_tree(path, args.exclude, args.normalize))
+    output = json.dumps(build_tree(
+        path,
+        args.exclude,
+        args.normalize,
+        args.name_only
+    ))
     print(output)
 
 
