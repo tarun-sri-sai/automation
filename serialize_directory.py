@@ -26,7 +26,7 @@ def walk(
     root: Path,
     path: Path,
     excludes: list[str],
-    normalize: bool = True
+    normalize: bool = False
 ) -> dict:
     node = {
         "type": "directory",
@@ -51,7 +51,12 @@ def walk(
                 "target": entry.readlink().as_posix(),
             })
         elif entry.is_dir():
-            node["children"].append(walk(root, entry, excludes))
+            node["children"].append(walk(
+                root,
+                entry,
+                excludes,
+                normalize=normalize
+            ))
         elif entry.is_file():
             node["children"].append({
                 "type": "file",
