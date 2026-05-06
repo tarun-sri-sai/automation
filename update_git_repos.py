@@ -11,6 +11,9 @@ from lib.logging_util import setup_logger
 
 semaphore = asyncio.Semaphore(10)
 
+logging.getLogger("git").setLevel(logging.WARNING)
+logging.getLogger("git.cmd").setLevel(logging.WARNING)
+
 
 async def get_repo_url(repo, ssh_host=None, use_ssh=None):
     if ssh_host:
