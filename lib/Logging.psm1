@@ -5,42 +5,73 @@ function Write-LogMessage {
 
         [Parameter(Mandatory = $true)]
         [string] $Message,
-        
-        [int]$Level = 4
+
+        [int] $Level = 4
     )
 
-    $logDir = Split-Path -Path $LogPath -Parent
-    New-Item -ItemType Directory -Path $logDir -ErrorAction SilentlyContinue | Out-Null
+    $levels = @{
+        1 = 'CRITICAL'
+        2 = 'ERROR'
+        3 = 'WARN'
+        4 = 'INFO'
+        5 = 'DEBUG'
+    }
+    if (-not $levels.ContainsKey($Level)) {
+        $Level = 4
+    }
+
+    $logDir = Split-Path $LogPath -Parent
+    if ($logDir -and -not (Test-Path $logDir)) {
+        New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+    }
 
     $maxSize = 5MB
-    if (Test-Path $LogPath) {
-        $size = (Get-Item $LogPath).Length
-        if ($size -ge $maxSize) {
-            Move-Item $LogPath "$LogPath.1" -Force # keep only one version for now
-            Remove-Item $LogPath -Force
+    try {
+        if (Test-Path $LogPath) {
+            $item = Get-Item $LogPath
+
+            if ($item.Length -ge $maxSize) {
+                Move-Item $LogPath "$LogPath.1" -Force
+            }
         }
     }
-
-    $loggingLevels = @("CRITICAL", "ERROR", "WARN", "INFO", "DEBUG")
-    if (($Level -lt 1) -or ($Level -gt $loggingLevels.Length)) {
-        $Level = 4  # Default to INFO if wrong level is provided
+    catch {
+        Write-Warning "Log rotation failed: $_"
     }
 
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $prefix = "${timestamp} - $($loggingLevels[$Level - 1])"
+    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    $logLine = '{0} [{1}] {2}' -f $timestamp, $levels[$Level], $Message
 
-    $logLine = "${prefix}`t${Message}"
+    switch ($Level) {
+        1 { Write-Error $logLine }
+        2 { Write-Error $logLine }
+        3 { Write-Warning $logLine }
+        4 { Write-Information $logLine -InformationAction Continue }
+        5 { Write-Verbose $logLine }
+    }
 
-    Write-Host $logLine
-
-    $fs = [System.IO.File]::Open($LogPath, 'Append', 'Write', 'ReadWrite')
-    $sw = New-Object System.IO.StreamWriter($fs)
+    $fs = $null
+    $sw = $null
     try {
+        $fs = [System.IO.FileStream]::new(
+            $LogPath,
+            [System.IO.FileMode]::Append,
+            [System.IO.FileAccess]::Write,
+            [System.IO.FileShare]::Read
+        )
+
+        $sw = [System.IO.StreamWriter]::new(
+            $fs,
+            [System.Text.UTF8Encoding]::new($false)
+        )
         $sw.WriteLine($logLine)
-    } catch {}
+    }
+    catch {
+        Write-Warning "Failed to write log: $_"
+    }
     finally {
-        $sw.Close()
-        $fs.Close()
+        $sw?.Dispose()
+        $fs?.Dispose()
     }
 }
 
