@@ -34,8 +34,7 @@ function Write-LogMessage {
                 Move-Item $LogPath "$LogPath.1" -Force
             }
         }
-    }
-    catch {
+    } catch {
         Write-Warning "Log rotation failed: $_"
     }
 
@@ -50,28 +49,24 @@ function Write-LogMessage {
         5 { Write-Verbose $logLine }
     }
 
-    $fs = $null
-    $sw = $null
+    $fs = [System.IO.FileStream]::new(
+        $LogPath,
+        [System.IO.FileMode]::Append,
+        [System.IO.FileAccess]::Write,
+        [System.IO.FileShare]::Read
+    )
     try {
-        $fs = [System.IO.FileStream]::new(
-            $LogPath,
-            [System.IO.FileMode]::Append,
-            [System.IO.FileAccess]::Write,
-            [System.IO.FileShare]::Read
-        )
-
         $sw = [System.IO.StreamWriter]::new(
             $fs,
             [System.Text.UTF8Encoding]::new($false)
         )
-        $sw.WriteLine($logLine)
-    }
-    catch {
-        Write-Warning "Failed to write log: $_"
-    }
-    finally {
-        $sw?.Dispose()
-        $fs?.Dispose()
+        try {
+            $sw.WriteLine($logLine)
+        } finally {
+            $sw.Dispose()
+        }
+    } finally {
+        $fs.Dispose()
     }
 }
 
