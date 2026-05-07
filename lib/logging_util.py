@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from logging import handlers
+from logging import config
 
 
 def setup_logger(
@@ -12,7 +12,7 @@ def setup_logger(
 ):
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
 
-    config = {
+    logging_config = {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
@@ -40,4 +40,4 @@ def setup_logger(
         },
     }
 
-    logging.config.dictConfig(config)
+    config.dictConfig(logging_config)
