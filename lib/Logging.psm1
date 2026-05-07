@@ -39,7 +39,7 @@ function Write-LogMessage {
     }
 
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    $logLine = '{0} [{1}] {2}' -f $timestamp, $levels[$Level], $Message
+    $logLine = '{0} - {1} - {2}' -f $timestamp, $levels[$Level], $Message
 
     switch ($Level) {
         1 { Write-Error $logLine }
