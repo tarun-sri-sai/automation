@@ -12,28 +12,13 @@ from lib.logging_util import setup_logger
 
 
 def list_dated_folders(backup_root: Path) -> list[Path]:
-    folders = [entry for entry in backup_root.iterdir()]
+    folders = [entry for entry in backup_root.iterdir() if entry.is_dir()]
     return sorted(folders, key=lambda p: p.name)
 
 
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        while True:
-            chunk = handle.read(1024 * 1024)
-            if not chunk:
-                break
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def files_identical(a: Path, b: Path) -> bool:
-    if a.stat().st_size != b.stat().st_size:
-        return False
-    return sha256(a) == sha256(b)
-
-
-def build_latest_index(source_folders: Iterable[Path]) -> Dict[str, Tuple[str, Path]]:
+def build_latest_index(
+    source_folders: Iterable[Path]
+) -> Dict[str, Tuple[str, Path]]:
     latest_by_name: Dict[str, Tuple[str, Path]] = {}
 
     for folder in source_folders:
@@ -112,52 +97,18 @@ def main() -> int:
             logging.error("no regular files found in source dated folders")
             return 3
 
-        created_target = False
-        if not target_folder.exists():
-            created_target = True
-            if not args.dry_run:
-                target_folder.mkdir(parents=True, exist_ok=True)
-
-        copied = 0
-        overwritten = 0
-        skipped = 0
-
         for filename in sorted(latest_by_name):
             source_date, source_path = latest_by_name[filename]
             destination_path = target_folder / filename
 
             if destination_path.exists():
-                if files_identical(source_path, destination_path):
-                    skipped += 1
-                    logging.debug(
-                        f"SKIP  {filename} (already identical to source date "
-                        f"{source_date})"
-                    )
-                    continue
-
-                overwritten += 1
-                logging.debug(f"OVERWRITE {filename} <- {source_date}")
-                if not args.dry_run:
-                    shutil.copy2(source_path, destination_path)
                 continue
 
-            copied += 1
-            logging.debug(f"COPY  {filename} <- {source_date}")
+            logging.info(f"[copy]  {filename} <- {source_date}")
             if not args.dry_run:
                 shutil.copy2(source_path, destination_path)
 
-        scanned = ", ".join(folder.name for folder in source_folders)
-        logging.info("Synthetic full backup summary")
-        logging.info(f"backup root     : {backup_root}")
-        logging.info(f"target folder   : {target_folder}")
-        logging.info(f"target created  : {'yes' if created_target else 'no'}")
-        logging.info(f"source folders  : {len(source_folders)} ({scanned})")
-        logging.info(f"unique filenames: {len(latest_by_name)}")
-        logging.info(f"copied          : {copied}")
-        logging.info(f"overwritten     : {overwritten}")
-        logging.info(f"skipped         : {skipped}")
-        logging.info(f"dry run         : {'yes' if args.dry_run else 'no'}")
-
+        logging.info("synthetic full backup finished successfully")
         return 0
     except Exception:
         logging.critical("failed to create synthetic full backup")
