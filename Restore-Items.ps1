@@ -3,10 +3,7 @@ param (
     [string]$BackupPath,
 
     [Parameter(Mandatory = $true)]
-    [string]$CertPath,
-
-    [Parameter(Mandatory = $true)]
-    [string]$KeyPath,
+    [string]$GpgRecipient,
 
     [Parameter(Mandatory = $true)]
     [string]$Destination
@@ -21,38 +18,35 @@ $logPath = Join-Path (Join-Path $thisDirectory "logs") "$fileBaseName.log"
 try {
     Write-LogMessage -LogPath $logPath -Message "Starting restore from $BackupPath."
 
-    $encryptedFile = Get-ChildItem -Path $BackupPath -Filter "*.7z.enc" |
-        Sort-Object LastWriteTime |
-        Select-Object -Last 1
-
+    $encryptedFile = Get-Item -Path $BackupPath
     if (-not $encryptedFile) {
-        throw "No encrypted backup (*.7z.enc) found in $BackupPath."
+        throw "No encrypted backup found at $BackupPath."
     }
 
     Write-LogMessage -LogPath $logPath -Message "Found encrypted file: $($encryptedFile.FullName)."
 
-    $decryptedZip = $encryptedFile.FullName -replace ".enc", ""
+    $decryptedArchive = (Join-Path $encryptedFile.Directory $encryptedFile.BaseName)
 
     Write-LogMessage -LogPath $logPath -Message "Decrypting archive using certificate and private key."
-    & openssl cms -decrypt -binary -inform DER -in $encryptedFile.FullName -out $decryptedZip -recip $CertPath -inkey $KeyPath
+    & gpg -r $GpgRecipient --decrypt --output $decryptedArchive $encryptedFile.FullName
 
-    if (-not (Test-Path $decryptedZip)) {
+    if (-not (Test-Path $decryptedArchive)) {
         throw "Decryption failed. Output file not created."
     }
 
-    Write-LogMessage -LogPath $logPath -Message "Decryption successful: $decryptedZip."
+    Write-LogMessage -LogPath $logPath -Message "Decryption successful: $decryptedArchive."
 
     if (-not (Test-Path $Destination)) {
         New-Item -ItemType Directory -Path $Destination | Out-Null
     }
 
     Write-LogMessage -LogPath $logPath -Message "Extracting archive to $Destination."
-    & 7z x $decryptedZip -y "-o$Destination"
+    & 7z x $decryptedArchive -y "-o$Destination"
 
     Write-LogMessage -LogPath $logPath -Message "Extraction completed."
 
     Write-LogMessage -LogPath $logPath -Message "Removing decrypted archive."
-    Remove-Item -Force $decryptedZip
+    Remove-Item -Force $decryptedArchive
 
     Write-LogMessage -LogPath $logPath -Message "Restore completed successfully."
 } catch {

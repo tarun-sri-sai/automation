@@ -6,7 +6,7 @@ param (
     [string]$MountPath,
 
     [Parameter(Mandatory = $true)]
-    [string]$CertPath,
+    [string]$GpgRecipient,
 
     [int]$Versions = 5,
 
@@ -35,7 +35,7 @@ $logPath = Join-Path (Join-Path $thisDirectory "logs") "$fileBaseName.log"
 
 try {
     $ext = "7z"
-    $encExt = "enc"
+    $encExt = "pgp"
     $date = Get-Date -Format "yyyyMMddHHmmss"
     if ($NoSuffix) {
         $zipFile = "${ZipFileName}.${ext}"
@@ -72,9 +72,9 @@ try {
         & 7z @scriptArgs
     }
 
-    Write-LogMessage -LogPath $logPath -Message "Encrypting archive using certificate: $CertPath."
+    Write-LogMessage -LogPath $logPath -Message "Encrypting archive using gpg."
     Invoke-LoggedScriptBlock -LogPath $logPath -ScriptBlock {
-        & openssl cms -encrypt -binary -aes256 -out $encryptedFile -outform DER -in $zipFile $CertPath
+        & gpg --batch --yes --recipient $GpgRecipient --output $encryptedFile --encrypt $zipFile
     }
 
     Write-LogMessage -LogPath $logPath -Message "Removing unencrypted archive."
