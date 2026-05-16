@@ -5,14 +5,11 @@ from argparse import ArgumentParser
 def main():
     excluded = {
         ord('"'),
-        ord("$"),
-        ord("%"),
         ord("'"),
         ord("0"),
         ord("1"),
         ord("I"),
         ord("O"),
-        ord("\\"),
         ord("l"),
         ord("|")
     }
