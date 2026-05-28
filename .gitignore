@@ -1,8 +1,8 @@
 # ignore node packages
-node_modules
+node_modules/
 
-# ignore python virtual env
-venv
+# ignore python virtual environments
+*venv*/
 
 # ignore python bytecode files
 *.pyc
