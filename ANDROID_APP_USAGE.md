@@ -1,4 +1,4 @@
-# ADB Guide
+# Android App Usage Guide
 
 ## Connecting via Wifi
 

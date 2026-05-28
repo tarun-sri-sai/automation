@@ -1,7 +1,10 @@
+import os
+import re
 import pandas as pd
 import requests_cache
 from argparse import ArgumentParser
 from bs4 import BeautifulSoup
+from pathlib import Path
 from sklearn.preprocessing import minmax_scale
 
 session = requests_cache.CachedSession(
@@ -9,6 +12,31 @@ session = requests_cache.CachedSession(
     backend='sqlite',
     expire_after=365 * 86400
 )
+
+
+def parse_line_into_pairs(line):
+    pattern = re.compile(r'(\w+)=(?:"((?:[^"\\]|\\.)*)"|([^\s]+))', re.VERBOSE)
+
+    result = {}
+    for match in pattern.finditer(line):
+        key = match.group(1)
+        value = (
+            match.group(2)
+            if match.group(2) is not None
+            else match.group(3)
+        )
+        if value is not None:
+            value = value.replace(r'\"', '"')
+        result[key] = value
+    return result
+
+
+def convert_to_records(text):
+    records = []
+    for line in text.splitlines():
+        line = line.strip()
+        records.append(parse_line_into_pairs(line))
+    return records
 
 
 def convert_duration(duration_str):
@@ -30,26 +58,31 @@ def scrape_app_name(package_name):
 
 
 def main():
-    parser = ArgumentParser(description="analyze Android app usage statistics")
-
+    parser = ArgumentParser(description="analyze android app usage statistics")
     parser.add_argument(
-        "--input",
-        "-i",
+        "input_file",
         type=str,
-        default="usagestats_yearly_packages.csv",
         help="path to the input CSV file containing app usage statistics"
     )
     parser.add_argument(
-        "top_n",
+        "-t",
+        "--top-n",
         type=int,
         default=50,
         help="number of top apps to display"
     )
-
     args = parser.parse_args()
 
+    input_file = Path(args.input_file).absolute()
+    os.chdir(input_file.absolute().parent)
+
+    out_file = f"{input_file.stem}.csv"
+    with open(input_file, "r") as f:
+        dataframe = pd.DataFrame(convert_to_records(f.read()))
+        dataframe.to_csv(out_file, index=False)
+
     df: pd.DataFrame = pd.read_csv(
-        args.input,
+        out_file,
         dtype={
             "package":          "string",
             "appLaunchCount":   "int64",
