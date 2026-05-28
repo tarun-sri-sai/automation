@@ -15,8 +15,7 @@ Get-ChildItem -Directory $Path | ForEach-Object -Parallel {
         foreach ($item in $output) {
             if ($item -is [System.Management.Automation.ErrorRecord]) {
                 $item.Exception.Message
-            }
-            else { 
+            } else { 
                 $item
             }
         }
