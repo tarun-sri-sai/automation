@@ -1,14 +1,21 @@
 import argparse
 import datetime as dt
-import hashlib
 import logging
-import os
 import shutil
 import sys
 import traceback
 from pathlib import Path
 from typing import Dict, Iterable, Tuple
 from lib.logging_util import setup_logger
+
+
+def init_logger():
+    script_file_path = Path(__file__)
+    work_dir = script_file_path.parent
+    script_name = script_file_path.stem
+
+    setup_logger(work_dir / "logs" / f"{script_name}.log")
+    logging.getLogger()
 
 
 def list_dated_folders(backup_root: Path) -> list[Path]:
@@ -52,17 +59,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
-    work_dir = os.path.dirname(__file__)
-    script_file = os.path.basename(__file__)
-
-    setup_logger(
-        os.path.join(
-            work_dir,
-            "logs",
-            os.path.splitext(script_file)[0] + ".log"
-        )
-    )
-    logging.getLogger()
+    init_logger()
 
     try:
         args = parse_args()

@@ -7,12 +7,22 @@ import shutil
 from argparse import ArgumentParser
 from git import Repo
 from git.exc import NoSuchPathError, InvalidGitRepositoryError
+from pathlib import Path
 from lib.logging_util import setup_logger
 
 semaphore = asyncio.Semaphore(10)
 
 logging.getLogger("git").setLevel(logging.WARNING)
 logging.getLogger("git.cmd").setLevel(logging.WARNING)
+
+
+def init_logger():
+    script_file_path = Path(__file__)
+    work_dir = script_file_path.parent
+    script_name = script_file_path.stem
+
+    setup_logger(work_dir / "logs" / f"{script_name}.log")
+    logging.getLogger()
 
 
 async def get_repo_url(repo, ssh_host=None, use_ssh=None):
@@ -154,17 +164,7 @@ async def update_local_clones(repos_dir, repo_urls):
 
 
 async def main():
-    work_dir = os.path.dirname(__file__)
-    script_file = os.path.basename(__file__)
-
-    setup_logger(
-        os.path.join(
-            work_dir,
-            "logs",
-            os.path.splitext(script_file)[0] + ".log"
-        )
-    )
-    logging.getLogger()
+    init_logger()
 
     try:
         parser = ArgumentParser()
