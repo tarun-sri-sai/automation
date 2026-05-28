@@ -52,7 +52,7 @@ const main = () => {
     const serverMessage = new ServerMessage(
       `hello! i'll keep sending a message once every ` +
         `${parseFloat((argv.interval / 1000).toFixed(2))} seconds. update it by sending ` +
-        `a new message to the server`
+        `a new message to the server`,
     );
 
     const { remoteAddress, remotePort } = request.socket;
