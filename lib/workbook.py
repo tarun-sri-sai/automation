@@ -23,7 +23,7 @@ def generate_workbook(tables, out_file):
         )
         header_cell.alignment = Alignment(horizontal='center')
         row += 1
-        
+
         for col, col_name in enumerate(table['headers'], 1):
             cell = sheet.cell(row=row, column=col, value=col_name)
             cell.font = Font(bold=True)
@@ -31,12 +31,12 @@ def generate_workbook(tables, out_file):
                 start_color='D9E1F2', end_color='D9E1F2', fill_type='solid'
             )
         row += 1
-        
+
         for data_row in table['data']:
             for col, val in enumerate(data_row, 1):
                 sheet.cell(row=row, column=col, value=val)
             row += 1
-        
+
         row += 2
 
     logging.debug(f"saving workbook to {out_file}")

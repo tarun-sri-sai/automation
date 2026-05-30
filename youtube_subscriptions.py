@@ -195,7 +195,7 @@ def main():
             }
             for s in subscriptions
         ], f, indent=2)
-    
+
     logging.info(f"done! output written to {output_path}")
 
 
