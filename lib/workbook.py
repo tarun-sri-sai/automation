@@ -38,6 +38,8 @@ def generate_workbook(tables, out_file):
                 cell = sheet.cell(row=row, column=col, value=val)
 
                 if isinstance(val, str) and is_url(val):
+                    display_val = val[:47] + "..." if len(val) > 50 else val
+                    cell.value = display_val
                     cell.hyperlink = val
                     cell.style = "Hyperlink"
 
