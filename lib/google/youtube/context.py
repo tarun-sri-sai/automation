@@ -143,11 +143,11 @@ class YouTubeContext:
                     f"stats for channel {channel_id}: {item['statistics']}"
                 )
                 stats[channel_id] = {
-                    'view_count': int(item['statistics'].get('viewCount', 0)),
-                    'subscriber_count': (
-                        item['statistics'].get('subscriberCount', 'Hidden')
+                    'view_count': int(item['statistics'].get('viewCount', -1)),
+                    'subscriber_count': int(
+                        item['statistics'].get('subscriberCount', -1)
                     ),
-                    'video_count': int(item['statistics'].get('videoCount', 0))
+                    'video_count': int(item['statistics'].get('videoCount', -1))
                 }
 
         return stats
