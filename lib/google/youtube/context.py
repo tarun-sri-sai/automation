@@ -128,7 +128,7 @@ class YouTubeContext:
     def get_channel_stats(self, channel_ids):
         stats = {}
 
-        logging.debug(f"fetching stats for channels...")
+        logging.info(f"fetching stats for {len(channel_ids)} channels...")
         for i in range(0, len(channel_ids), self._PAGE_SIZE):
             logging.debug(f"fetching batch [{i + 1}, {i + self._PAGE_SIZE}]")
             batch = channel_ids[i:i+self._PAGE_SIZE]
