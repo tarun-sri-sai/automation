@@ -1,6 +1,7 @@
 import logging
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
+from .validation import is_url
 
 
 def generate_workbook(tables, out_file):
@@ -34,7 +35,12 @@ def generate_workbook(tables, out_file):
 
         for data_row in table['data']:
             for col, val in enumerate(data_row, 1):
-                sheet.cell(row=row, column=col, value=val)
+                cell = sheet.cell(row=row, column=col, value=val)
+
+                if isinstance(val, str) and is_url(val):
+                    cell.hyperlink = val
+                    cell.style = "Hyperlink"
+
             row += 1
 
         row += 2
