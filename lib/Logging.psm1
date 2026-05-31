@@ -77,13 +77,17 @@ function Get-CommandOutput {
     )
 
     $output = @(& $ScriptBlock 2>&1)
+
+    $result = @()
     foreach ($item in $output) {
         if ($item -is [System.Management.Automation.ErrorRecord]) {
-            $item.Exception.Message
+            $result += $item.Exception.Message
         } else {
-            $item
+            $result += $item
         }
     }
+
+    return $result -join "`n"
 }
 
 function Invoke-LoggedScriptBlock {
