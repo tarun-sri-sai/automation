@@ -18,7 +18,7 @@ def generate_workbook(tables, out_file):
         )
         header_cell = sheet[f'A{row}']
         header_cell.value = table['title']
-        header_cell.font = Font(bold=True, size=12)
+        header_cell.font = Font(bold=True, size=11, color='FFFFFF')
         header_cell.fill = PatternFill(
             start_color='4472C4', end_color='4472C4', fill_type='solid'
         )
