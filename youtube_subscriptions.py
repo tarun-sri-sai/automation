@@ -1,6 +1,7 @@
 import json
 import logging
 from argparse import ArgumentParser
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from lib.encryption import read_password
 from lib.logging_util import setup_logger
@@ -36,26 +37,33 @@ def main():
     yt = YouTubeContext(
         args.client_id, read_password("client secret: "), args.project_id
     )
+
     subscriptions = yt.get_subscriptions()
-    stats = yt.get_channel_stats(
-        tuple(s["channel_id"] for s in subscriptions)
+    channel_ids = tuple(s["channel_id"] for s in subscriptions)
+
+    channel_stats = yt.get_channel_stats(channel_ids)
+
+    today = datetime.now(timezone.utc).replace(
+        hour=0, minute=0, second=0, microsecond=0
     )
+    one_year_ago = (today - timedelta(days=365)).isoformat()
+    recent_video_stats = yt.get_recent_video_stats(channel_ids, one_year_ago)
 
     output_path = Path(args.output)
+    result = []
+    for s in subscriptions:
+        result.append({
+            "channel_id": s["channel_id"],
+            "channel_title": s["channel_title"],
+            "description": s["description"],
+            "thumbnail": s["thumbnail"],
+            **channel_stats[s["channel_id"]],
+            **recent_video_stats[s["channel_id"]]
+        })
+
     logging.debug(f"writing to {output_path}...")
     with open(output_path, "w") as f:
-        json.dump([
-            {
-                "channel_id": s["channel_id"],
-                "channel_title": s["channel_title"],
-                "description": s["description"],
-                "view_count": stats[s["channel_id"]]["view_count"],
-                "subscriber_count": stats[s["channel_id"]]["subscriber_count"],
-                "video_count": stats[s["channel_id"]]["video_count"],
-                "thumbnail": s["thumbnail"]
-            }
-            for s in subscriptions
-        ], f, indent=2)
+        json.dump(result, f, indent=2)
 
     logging.info(f"done! output written to {output_path}")
 
