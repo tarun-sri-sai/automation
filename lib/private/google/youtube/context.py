@@ -36,9 +36,6 @@ class YouTubeContext:
         self._creds = None
         self._creds_lock = threading.Lock()
 
-        self._client = None
-        self._client_lock = threading.Lock()
-
     def __repr__(self):
         return (
             f"YouTubeContext(project_id={self._project_id})"
@@ -95,15 +92,8 @@ class YouTubeContext:
             logging.info("initialized google credentials")
             return self._creds
 
-    @property
-    def client(self):
-        with self._client_lock:
-            if self._client is not None:
-                return self._client
-
-            self._client = build('youtube', 'v3', credentials=self.creds)
-            logging.info("initialized youtube client")
-            return self._client
+    def _get_client(self):
+        return build('youtube', 'v3', credentials=self.creds)
 
     @sqlite_cache()
     def get_subscriptions(self):
@@ -112,7 +102,7 @@ class YouTubeContext:
 
         logging.info("fetching all subscriptions...")
         while True:
-            request = self.client.subscriptions().list(
+            request = self._get_client().subscriptions().list(
                 part='snippet,contentDetails', mine=True,
                 maxResults=self._PAGE_SIZE, pageToken=next_page_token
             )
@@ -144,7 +134,7 @@ class YouTubeContext:
         for i in range(0, len(channel_ids), self._PAGE_SIZE):
             logging.debug(f"fetching batch [{i + 1}, {i + self._PAGE_SIZE}]")
             batch = channel_ids[i:i+self._PAGE_SIZE]
-            request = self.client.channels().list(
+            request = self._get_client().channels().list(
                 part='statistics,contentDetails', id=','.join(batch)
             )
             response = request.execute()
@@ -173,7 +163,7 @@ class YouTubeContext:
         result = {}
         for i in range(0, len(channel_ids), self._PAGE_SIZE):
             batch = list(channel_ids[i:i+self._PAGE_SIZE])
-            response = self.client.channels().list(
+            response = self._get_client().channels().list(
                 part="contentDetails",
                 id=",".join(batch)
             ).execute()
@@ -193,7 +183,7 @@ class YouTubeContext:
         next_page_token = None
 
         while True:
-            response = self.client.playlistItems().list(
+            response = self._get_client().playlistItems().list(
                 part="contentDetails",
                 playlistId=playlist_id,
                 maxResults=self._PAGE_SIZE,
