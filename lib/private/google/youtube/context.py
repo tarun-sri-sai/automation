@@ -252,15 +252,15 @@ class YouTubeContext:
                     "videos_last_year": (
                         len(recent_videos[upload_playlists[channel_id]])
                     ),
-                    "last_video_date": recent_videos[
+                    "last_video_date": datetime.isoformat(recent_videos[
                         upload_playlists[channel_id]
-                    ][0]["published_at"]
+                    ][0]["published_at"])
                 }
                 if recent_videos[upload_playlists[channel_id]]
                 else
                 {
                     "videos_last_year": 0,
-                    "last_video_date": None
+                    "last_video_date": ""
                 }
             )
             for channel_id in channel_ids
