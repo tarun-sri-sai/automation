@@ -54,7 +54,10 @@ class YouTubeContext:
                 with open(self._TOKEN_CACHE, "rb") as f:
                     self._creds = pickle.load(f)
 
-            if self._creds.valid and not self._creds.expired:
+            if (
+                self._creds is not None and self._creds.valid and 
+                not self._creds.expired
+            ):
                 logging.debug(f"valid credentials, not updating cache")
                 return self._creds
 
