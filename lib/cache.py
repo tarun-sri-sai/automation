@@ -15,14 +15,14 @@ def sqlite_cache(ttl=CACHE_TTL.total_seconds()):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            key_data = {
+            key_data = json.dumps({
                 "func": func.__module__ + "." + func.__qualname__,
                 "args": args,
                 "kwargs": kwargs,
-            }
-            cache_key = hashlib.sha256(json.dumps(
-                key_data, sort_keys=True, default=str
-            ).encode()).hexdigest()
+            }, sort_keys=True, default=str)
+
+            logging.debug(f"generating cache key for [{key_data}]...")
+            cache_key = hashlib.sha256(key_data.encode()).hexdigest()
 
             sentinel = object()
             result = cache.get(cache_key, default=sentinel)
