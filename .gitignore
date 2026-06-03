@@ -10,8 +10,8 @@ node_modules/
 # ignore jupyter notebooks used for testing
 *.ipynb
 
-# ignore inputs
-inputs/
+# ignore inputs and outputs
+data/
 
 # ignore build files
 build/
