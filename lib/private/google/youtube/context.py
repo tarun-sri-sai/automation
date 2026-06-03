@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from lib.cache import sqlite_cache
@@ -178,44 +179,51 @@ class YouTubeContext:
     def _get_recent_videos(self, playlist_id, since):
         logging.debug(f"fetching recent videos for playlist {playlist_id}...")
 
-        since = datetime.fromisoformat(since)
-        videos = {playlist_id: []}
-        next_page_token = None
+        try:
+            since = datetime.fromisoformat(since)
+            videos = {playlist_id: []}
+            next_page_token = None
 
-        while True:
-            response = self._get_client().playlistItems().list(
-                part="contentDetails",
-                playlistId=playlist_id,
-                maxResults=self._PAGE_SIZE,
-                pageToken=next_page_token
-            ).execute()
+            while True:
+                response = self._get_client().playlistItems().list(
+                    part="contentDetails",
+                    playlistId=playlist_id,
+                    maxResults=self._PAGE_SIZE,
+                    pageToken=next_page_token
+                ).execute()
 
-            done = False
+                done = False
 
-            items = sorted((
-                datetime.fromisoformat(i["contentDetails"]["videoPublishedAt"])
-                for i in response.get("items", [])
-            ), reverse=True)
+                items = sorted((
+                    datetime.fromisoformat(i["contentDetails"]["videoPublishedAt"])
+                    for i in response.get("items", [])
+                ), reverse=True)
 
-            cutoff = bisect_left(
-                [-t.timestamp() for t in items], -since.timestamp()
+                cutoff = bisect_left(
+                    [-t.timestamp() for t in items], -since.timestamp()
+                )
+                videos[playlist_id].extend(
+                    {"published_at": item} for item in items[:cutoff]
+                )
+                if cutoff < len(items):
+                    done = True
+
+                next_page_token = response.get("nextPageToken")
+                if done or not next_page_token:
+                    break
+
+                logging.debug(
+                    f"next page for playlist {playlist_id}: {next_page_token}"
+                )
+
+            videos[playlist_id].sort(key=lambda x: -x["published_at"].timestamp())
+            return videos
+        
+        except HttpError:
+            logging.warning(
+                f"error fetching videos for playlist {playlist_id}, skipping..."
             )
-            videos[playlist_id].extend(
-                {"published_at": item} for item in items[:cutoff]
-            )
-            if cutoff < len(items):
-                done = True
-
-            next_page_token = response.get("nextPageToken")
-            if done or not next_page_token:
-                break
-
-            logging.debug(
-                f"next page for playlist {playlist_id}: {next_page_token}"
-            )
-
-        videos[playlist_id].sort(key=lambda x: -x["published_at"].timestamp())
-        return videos
+            return {playlist_id: []}
 
     @sqlite_cache()
     def get_recent_video_stats(self, channel_ids, since):
