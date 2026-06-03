@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from lib.encryption import read_password
 from lib.logging_util import setup_logger
-from lib.google.youtube.context import YouTubeContext
+from lib.private.google.youtube.context import YouTubeContext
 
 
 def init_logger():
