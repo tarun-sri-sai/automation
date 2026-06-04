@@ -53,7 +53,7 @@ class YouTubeContext:
                     self._creds = pickle.load(f)
 
             if (
-                self._creds is not None and self._creds.valid and 
+                self._creds is not None and self._creds.valid and
                 not self._creds.expired
             ):
                 logging.debug(f"valid credentials, not updating cache")
@@ -195,8 +195,9 @@ class YouTubeContext:
                 done = False
 
                 items = sorted((
-                    datetime.fromisoformat(i["contentDetails"]["videoPublishedAt"])
-                    for i in response.get("items", [])
+                    datetime.fromisoformat(
+                        i["contentDetails"]["videoPublishedAt"]
+                    ) for i in response.get("items", [])
                 ), reverse=True)
 
                 cutoff = bisect_left(
@@ -216,9 +217,11 @@ class YouTubeContext:
                     f"next page for playlist {playlist_id}: {next_page_token}"
                 )
 
-            videos[playlist_id].sort(key=lambda x: -x["published_at"].timestamp())
+            videos[playlist_id].sort(
+                key=lambda x: -x["published_at"].timestamp()
+            )
             return videos
-        
+
         except HttpError:
             logging.warning(
                 f"error fetching videos for playlist {playlist_id}, skipping..."
@@ -275,7 +278,9 @@ class YouTubeContext:
             hour=0, minute=0, second=0, microsecond=0
         )
         one_year_ago = (today - timedelta(days=365)).isoformat()
-        recent_video_stats = self._get_recent_video_stats(channel_ids, one_year_ago)
+        recent_video_stats = self._get_recent_video_stats(
+            channel_ids, one_year_ago
+        )
 
         result = []
         for s in subscriptions:
@@ -291,10 +296,10 @@ class YouTubeContext:
         return result
 
     def _convert_stats_to_markdown(self, stats):
-        headers = ["Channel", "Description", "Views", "Subscribers", "Videos", 
-                   "Videos/Year", "Last Video"]
+        headers = ["Thumbnail", "Channel", "Description", "Views", "Subscribers",
+                   "Videos", "Videos/Year", "Last Video"]
         rows = [
-            f"| {' | '.join(headers)} |", 
+            f"| {' | '.join(headers)} |",
             f"| {' | '.join(['---'] * len(headers))} |"
         ]
 
@@ -320,7 +325,8 @@ class YouTubeContext:
             desc = c["description"].replace("\n", " ")[:80] + "..."
 
             row = [
-                f"{thumbnail} **{c['channel_title']}**",
+                thumbnail,
+                str(c['channel_title']),
                 desc,
                 f"{c['view_count']:,}",
                 f"{c['subscriber_count']:,}",
