@@ -5,7 +5,7 @@ from datetime import timedelta
 from diskcache import Cache
 from functools import wraps
 
-CACHE_TTL = timedelta(days=7)
+CACHE_TTL = timedelta(days=1)
 cache = Cache("temp")
 
 
