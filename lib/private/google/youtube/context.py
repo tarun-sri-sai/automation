@@ -3,7 +3,7 @@ import logging
 import pickle
 import threading
 from bisect import bisect_left
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -97,7 +97,7 @@ class YouTubeContext:
         return build('youtube', 'v3', credentials=self.creds)
 
     @sqlite_cache()
-    def get_subscriptions(self):
+    def _get_subscriptions(self):
         subscriptions = []
         next_page_token = None
 
@@ -128,7 +128,7 @@ class YouTubeContext:
         return subscriptions
 
     @sqlite_cache()
-    def get_channel_stats(self, channel_ids):
+    def _get_channel_stats(self, channel_ids):
         stats = {}
 
         logging.info(f"fetching stats for {len(channel_ids)} channels...")
@@ -225,7 +225,7 @@ class YouTubeContext:
             )
             return {playlist_id: []}
 
-    def get_recent_video_stats(self, channel_ids, since):
+    def _get_recent_video_stats(self, channel_ids, since):
         logging.info(
             f"fetching recent video stats for {len(channel_ids)} channels..."
         )
@@ -264,3 +264,85 @@ class YouTubeContext:
             )
             for channel_id in channel_ids
         }
+
+    def _get_subscriptions_stats(self):
+        subscriptions = self._get_subscriptions()
+        channel_ids = tuple(s["channel_id"] for s in subscriptions)
+
+        channel_stats = self._get_channel_stats(channel_ids)
+
+        today = datetime.now(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        one_year_ago = (today - timedelta(days=365)).isoformat()
+        recent_video_stats = self._get_recent_video_stats(channel_ids, one_year_ago)
+
+        result = []
+        for s in subscriptions:
+            result.append({
+                "channel_id": s["channel_id"],
+                "channel_title": s["channel_title"],
+                "description": s["description"],
+                "thumbnail": s["thumbnail"],
+                **channel_stats[s["channel_id"]],
+                **recent_video_stats[s["channel_id"]]
+            })
+
+        return result
+
+    def _convert_stats_to_markdown(self, stats):
+        headers = ["Channel", "Description", "Views", "Subscribers", "Videos", 
+                   "Videos/Year", "Last Video"]
+        rows = [
+            f"| {' | '.join(headers)} |", 
+            f"| {' | '.join(['---'] * len(headers))} |"
+        ]
+
+        for c in stats:
+            try:
+                last_video = datetime.fromisoformat(c["last_video_date"])
+            except ValueError:
+                last_video = datetime.fromtimestamp(0, tz=timezone.utc)
+            delta = datetime.now(timezone.utc) - last_video
+            days = delta.days
+            if days == 0:
+                relative = "Today"
+            elif days < 7:
+                relative = f"{days}d ago"
+            elif days < 30:
+                relative = f"{days // 7}w ago"
+            elif days < 365:
+                relative = f"{days // 30}mo ago"
+            else:
+                relative = f"{days // 365}y ago"
+
+            thumbnail = f"![{c['channel_title']}]({c['thumbnail']})"
+            desc = c["description"].replace("\n", " ")[:80] + "..."
+
+            row = [
+                f"{thumbnail} **{c['channel_title']}**",
+                desc,
+                f"{c['view_count']:,}",
+                f"{c['subscriber_count']:,}",
+                str(c["video_count"]),
+                str(c["videos_last_year"]),
+                relative,
+            ]
+            rows.append(f"| {' | '.join(row)} |")
+
+        return "\n".join(rows)
+
+    def generate_subscriptions_report(self, out_file):
+        stats = self._get_subscriptions_stats()
+        markdown_text = self._convert_stats_to_markdown(stats)
+
+        try:
+            output_path = Path(out_file)
+        except TypeError:
+            logging.info(f"writing markdown report to stdout...")
+            print(markdown_text)
+            return
+
+        logging.info(f"writing markdown report to {output_path}...")
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(markdown_text)

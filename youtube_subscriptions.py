@@ -29,8 +29,7 @@ def main():
         "project_id", type=str, help="project ID"
     )
     parser.add_argument(
-        "-o", "--output", type=str, default="output.json",
-        help="output file name (default: output.json)"
+        "-o", "--output", type=str, help="output file name"
     )
     args = parser.parse_args()
 
@@ -38,34 +37,7 @@ def main():
         args.client_id, read_password("client secret: "), args.project_id
     )
 
-    subscriptions = yt.get_subscriptions()
-    channel_ids = tuple(s["channel_id"] for s in subscriptions)
-
-    channel_stats = yt.get_channel_stats(channel_ids)
-
-    today = datetime.now(timezone.utc).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
-    one_year_ago = (today - timedelta(days=365)).isoformat()
-    recent_video_stats = yt.get_recent_video_stats(channel_ids, one_year_ago)
-
-    output_path = Path(args.output)
-    result = []
-    for s in subscriptions:
-        result.append({
-            "channel_id": s["channel_id"],
-            "channel_title": s["channel_title"],
-            "description": s["description"],
-            "thumbnail": s["thumbnail"],
-            **channel_stats[s["channel_id"]],
-            **recent_video_stats[s["channel_id"]]
-        })
-
-    logging.debug(f"writing to {output_path}...")
-    with open(output_path, "w") as f:
-        json.dump(result, f, indent=2)
-
-    logging.info(f"done! output written to {output_path}")
+    yt.generate_subscriptions_report(args.output)
 
 
 if __name__ == "__main__":
