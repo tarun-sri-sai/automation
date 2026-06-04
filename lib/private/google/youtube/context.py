@@ -225,7 +225,6 @@ class YouTubeContext:
             )
             return {playlist_id: []}
 
-    @sqlite_cache()
     def get_recent_video_stats(self, channel_ids, since):
         logging.info(
             f"fetching recent video stats for {len(channel_ids)} channels..."
