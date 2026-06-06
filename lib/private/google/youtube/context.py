@@ -14,6 +14,9 @@ from tempfile import NamedTemporaryFile
 from lib.cache import sqlite_cache
 
 
+logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
+
+
 class YouTubeContext:
     def __init__(self, client_id, client_secret, project_id):
         self._SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
@@ -177,7 +180,7 @@ class YouTubeContext:
 
     @sqlite_cache()
     def _get_recent_videos(self, playlist_id, since):
-        logging.debug(f"fetching recent videos for playlist {playlist_id}...")
+        logging.info(f"fetching recent videos for playlist {playlist_id}...")
 
         try:
             since = datetime.fromisoformat(since)
