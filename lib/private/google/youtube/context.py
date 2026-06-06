@@ -1,6 +1,7 @@
 import json
 import logging
 import pickle
+import re
 import threading
 from bisect import bisect_left
 from datetime import datetime, timezone, timedelta
@@ -297,6 +298,12 @@ class YouTubeContext:
             })
 
         return result
+    
+    def _clean_text(self, text):
+        text = re.sub(r"\s+", " ", text.strip())
+        text = text[:77] + "..." if len(text) > 80 else text
+        text = text.replace("|", r"\|")
+        return text
 
     def _convert_stats_to_markdown(self, stats):
         headers = ["Thumbnail", "Channel", "Description", "Views", "Subscribers",
@@ -329,8 +336,8 @@ class YouTubeContext:
 
             row = [
                 thumbnail,
-                str(c['channel_title']),
-                desc,
+                self._clean_text(c['channel_title']),
+                self._clean_text(desc),
                 f"{c['view_count']:,}",
                 f"{c['subscriber_count']:,}",
                 str(c["video_count"]),
