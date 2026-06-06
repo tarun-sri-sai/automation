@@ -196,8 +196,6 @@ class YouTubeContext:
                     pageToken=next_page_token
                 ).execute()
 
-                done = False
-
                 items = sorted((
                     datetime.fromisoformat(
                         i["contentDetails"]["videoPublishedAt"]
@@ -211,10 +209,10 @@ class YouTubeContext:
                     {"published_at": item} for item in items[:cutoff]
                 )
                 if cutoff < len(items):
-                    done = True
+                    break
 
                 next_page_token = response.get("nextPageToken")
-                if done or not next_page_token:
+                if not next_page_token:
                     break
 
                 logging.debug(
