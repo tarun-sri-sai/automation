@@ -12,6 +12,9 @@ Get-ChildItem -Directory $Path | ForEach-Object -Parallel {
     $repo = $_.FullName
     $repoName = $_.Name
 
+    & git -C $repo stash
+    $originalBranch = & git -C $repo branch --show-current
+
     & git -C $repo branch --format='%(refname:short)' | ForEach-Object {
         $record = [pscustomobject]@{
             repo   = $repoName
@@ -21,7 +24,9 @@ Get-ChildItem -Directory $Path | ForEach-Object -Parallel {
             push   = Get-CommandOutput { & git -C $repo push origin $_ }
             status = Get-CommandOutput { & git -C $repo status }
         }
-
         $record | ConvertTo-Json -Compress -Depth 10
     }
+
+    & git -C $repo switch $originalBranch
+    & git -C $repo stash pop
 }
