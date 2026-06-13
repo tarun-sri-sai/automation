@@ -3,7 +3,6 @@ import datetime as dt
 import logging
 import shutil
 import sys
-import traceback
 from pathlib import Path
 from typing import Dict, Iterable, Tuple
 from lib.logging_util import setup_logger
@@ -108,8 +107,9 @@ def main() -> int:
         logging.info("synthetic full backup finished successfully")
         return 0
     except Exception:
-        logging.critical("failed to create synthetic full backup")
-        logging.critical(traceback.format_exc())
+        logging.critical(
+            "failed to create synthetic full backup", exc_info=True
+        )
         return 1
 
 

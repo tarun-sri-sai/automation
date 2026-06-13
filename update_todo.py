@@ -1,7 +1,6 @@
 import git
 import logging
 import datetime
-import traceback
 from argparse import ArgumentParser
 from pathlib import Path
 from lib.logging_util import setup_logger
@@ -71,8 +70,7 @@ def main():
         commit_daily_copy(repo)
         push_to_origin(repo)
     except Exception as _:
-        logging.critical("failed to update to-do")
-        logging.critical(traceback.print_exc())
+        logging.critical("failed to update to-do", exc_info=True)
 
 
 if __name__ == '__main__':

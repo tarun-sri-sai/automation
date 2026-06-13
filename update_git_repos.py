@@ -214,8 +214,7 @@ async def main():
         else:
             await update_local_clones(args.repos_dir, repo_urls)
     except Exception as e:
-        logging.critical(f"Error while updating git repos: {e}.")
-        raise
+        logging.critical(f"error while updating git repos: {e}", exc_info=True)
 
 
 if __name__ == "__main__":
