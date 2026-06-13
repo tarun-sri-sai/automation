@@ -18,7 +18,7 @@ from lib.cache import sqlite_cache
 logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
 
 
-class YouTubeContext:
+class Subscriptions:
     def __init__(self, client_id, client_secret, project_id):
         self._SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
         self._TOKEN_CACHE = Path("youtube-token.pkl")
@@ -101,7 +101,7 @@ class YouTubeContext:
         return build('youtube', 'v3', credentials=self.creds)
 
     @sqlite_cache()
-    def _get_subscriptions(self):
+    def _get(self):
         subscriptions = []
         next_page_token = None
 
@@ -270,8 +270,8 @@ class YouTubeContext:
             for channel_id in channel_ids
         }
 
-    def _get_subscriptions_stats(self):
-        subscriptions = self._get_subscriptions()
+    def _get_stats(self):
+        subscriptions = self._get()
         channel_ids = tuple(s["channel_id"] for s in subscriptions)
 
         channel_stats = self._get_channel_stats(channel_ids)
@@ -346,8 +346,8 @@ class YouTubeContext:
 
         return "\n".join(rows)
 
-    def generate_subscriptions_report(self, out_file):
-        stats = self._get_subscriptions_stats()
+    def generate_report(self, out_file):
+        stats = self._get_stats()
         markdown_text = self._convert_stats_to_markdown(stats)
 
         try:

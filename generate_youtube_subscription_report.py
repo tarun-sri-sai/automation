@@ -1,11 +1,8 @@
-import json
-import logging
 from argparse import ArgumentParser
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from lib.encryption import read_password
 from lib.logging_util import setup_logger
-from lib.private.google.youtube.context import YouTubeContext
+from lib.private.google.youtube.subscriptions import Subscriptions
 
 
 def init_logger():
@@ -33,11 +30,11 @@ def main():
     )
     args = parser.parse_args()
 
-    yt = YouTubeContext(
+    yt = Subscriptions(
         args.client_id, read_password("client secret: "), args.project_id
     )
 
-    yt.generate_subscriptions_report(args.output)
+    yt.generate_report(args.output)
 
 
 if __name__ == "__main__":
