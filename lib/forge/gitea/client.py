@@ -1,6 +1,10 @@
 import os
 import requests
+import warnings
 from lib.forge.client import Client
+
+warnings.filterwarnings("ignore")
+
 
 GITEA_HOST = os.getenv("GITEA_HOST")
 GITEA_TOKEN = os.getenv("GITEA_TOKEN")
@@ -18,8 +22,8 @@ class GiteaClient(Client):
             "Accept": "application/json"
         }
         kwargs["headers"] = {
-            **kwargs.get("headers", {}),
-            **headers
+            **headers,
+            **kwargs.get("headers", {})
         }
 
         kwargs["verify"] = False
