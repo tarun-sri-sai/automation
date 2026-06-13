@@ -1,9 +1,18 @@
 from lib.forge.repos import Repos
-from .client import GiteaClient
 
 
 class GiteaRepos(Repos):
-    def get():
-        url = f"{GiteaClient.get_host()}/api/v1/user/repos"
-        response = GiteaClient.make_request("GET", url)
-        return [i.get("full_name") for i in response]
+    def __init__(self, client, props=None):
+        self._client = client
+
+        self._props = props
+        if self._props is None:
+            self._props = ["full_name"]
+
+    def get(self):
+        response = self._client.make_request("GET", "/api/v1/user/repos")
+
+        return [
+            {k: i.get(k) for k in self._props}
+            for i in response.json()
+        ]

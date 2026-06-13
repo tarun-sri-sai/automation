@@ -1,36 +1,29 @@
 import os
 import requests
-import warnings
 from lib.forge.client import Client
 
-warnings.filterwarnings("ignore")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 
-GITEA_HOST = os.getenv("GITEA_HOST")
-GITEA_TOKEN = os.getenv("GITEA_TOKEN")
-
-
-class GiteaClient(Client):
-    def __init__(self, verify_ssl=False):
+class GithubClient(Client):
+    def __init__(self):
         self._headers = {
             "Accept": "application/json",
+            "Content-Type": "application/json"
         }
 
-        self._verify_ssl = verify_ssl
-
-        if GITEA_TOKEN:
-            self._headers["Authorization"] = f"Bearer {GITEA_TOKEN}"
+        if GITHUB_TOKEN:
+            self._headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
 
     def is_authenticated(self):
         return "Authorization" in self._headers
-
+    
     def make_request(self, method, endpoint, **kwargs):
         kwargs["headers"] = {
             **self._headers,
             **kwargs.get("headers", {})
         }
-        kwargs["verify"] = self._verify_ssl
-        url = f"{GITEA_HOST}{endpoint}"
+        url = f"https://api.github.com{endpoint}"
 
         response = requests.request(method, url, **kwargs)
         response.raise_for_status()

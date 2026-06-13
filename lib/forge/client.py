@@ -2,12 +2,10 @@ from abc import ABC, abstractmethod
 
 
 class Client(ABC):
-    @staticmethod
     @abstractmethod
-    def get_host():
+    def is_authenticated(self):
         pass
 
-    @staticmethod
     @abstractmethod
-    def make_request(*args, **kwargs):
+    def make_request(self, method, endpoint, **kwargs):
         pass

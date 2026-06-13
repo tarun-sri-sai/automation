@@ -1,20 +1,18 @@
 import logging
 from lib.forge.branch_protections import BranchProtections
-from .client import GiteaClient
-from .repos import GiteaRepos
 
 
 class GiteaBranchProtections(BranchProtections):
-    @staticmethod
-    def _get(repo):
-        host = GiteaClient.get_host()
-        url = f"{host}/api/v1/repos/{repo}/branch_protections"
+    def __init__(self, client, repos):
+        self._client = client
+        self._repos = repos
 
-        response = GiteaClient.make_request("GET", url)
-        return response
+    def _get(self, repo):
+        url = f"/api/v1/repos/{repo}/branch_protections"
+        response = self._client.make_request("GET", url)
+        return response.json()
 
-    @staticmethod
-    def _verify_repo(repo):
+    def _verify_repo(self, repo):
         check_lists = {
             "**": {
                 "priority": 1,
@@ -50,7 +48,7 @@ class GiteaBranchProtections(BranchProtections):
         }
 
         verified = set()
-        for protection in GiteaBranchProtections._get(repo):
+        for protection in self._get(repo):
             rule_name = protection.get("rule_name")
             if rule_name not in check_lists:
                 continue
@@ -62,17 +60,16 @@ class GiteaBranchProtections(BranchProtections):
                     continue
 
                 logging.info(
-                    f"rule [{rule_name}]: {key} is {actual_val}, expected "
+                    f"[{repo}] {rule_name}: {key} is {actual_val}, expected "
                     f"{expected_val}"
                 )
 
         if len(verified) < len(check_lists):
             logging.info(
-                f"rule [{rule_name}]: required branch protections not found: "
+                f"[{repo}] required branch protections not found: "
                 f"{set(check_lists.keys()) - verified}"
             )
 
-    @staticmethod
-    def verify():
-        for repo in GiteaRepos.get():
-            GiteaBranchProtections._verify_repo(repo)
+    def verify(self):
+        for repo in self._repos.get():
+            self._verify_repo(repo["full_name"])

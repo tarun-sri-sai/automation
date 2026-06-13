@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 
 class BranchProtections(ABC):
-    @staticmethod
     @abstractmethod
-    def verify():
+    def verify(self):
         pass

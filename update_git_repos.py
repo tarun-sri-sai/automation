@@ -2,12 +2,13 @@ import asyncio
 import logging
 import os
 import re
-import requests
 import shutil
 from argparse import ArgumentParser
 from git import Repo
 from git.exc import NoSuchPathError, InvalidGitRepositoryError
 from pathlib import Path
+from lib.forge.github.client import GithubClient
+from lib.forge.github.repos import GithubRepos
 from lib.logging_util import setup_logger
 
 semaphore = asyncio.Semaphore(10)
@@ -30,91 +31,6 @@ async def get_repo_url(repo, ssh_host=None, use_ssh=None):
         return re.sub(r"git@[^:]+:", f"{ssh_host}:", repo["ssh_url"])
 
     return repo["ssh_url"] if use_ssh else repo["clone_url"]
-
-
-async def discover_git_repos(
-    visibility=None,
-    username=None,
-    ssh_host=None,
-    use_ssh=None
-):
-    url = "https://api.github.com/user/repos"
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "X-GitHub-Api-Version": "2022-11-28"
-    }
-
-    try:
-        bearer_token = os.environ.get("GITHUB_TOKEN")
-        if bearer_token:
-            logging.info("Using bearer token from environment.")
-            headers["Authorization"] = f"Bearer {bearer_token}"
-        else:
-            logging.warning("No bearer token found in environment.")
-    except Exception as e:
-        logging.warning(f"Environment variable not given, it's ok: {e}.")
-
-    params = {}
-
-    if username:
-        url = f"https://api.github.com/users/{username}/repos"
-    elif bearer_token:
-        params["affiliation"] = "owner"
-    else:
-        logging.error(f"Pass --username <github-username> for public repos")
-        return []
-
-    if bearer_token:
-        if visibility in ["public", "private"]:
-            params["visibility"] = visibility
-    else:
-        logging.info(
-            "Unauthenticated requests can only access public repos."
-        )
-        params["visibility"] = "public"
-
-    logging.info(f"Params: {params}")
-
-    repo_urls = {}
-    try:
-        while url:
-            logging.info(f"Requesting endpoint {url} for repos.")
-            response = requests.get(url, headers=headers, params=params)
-            logging.info(
-                f"Status for discovery response: {response.status_code}."
-            )
-
-            if response.status_code == requests.codes.unauthorized:
-                logging.warning(
-                    "You may need to provide a valid GitHub token."
-                )
-
-            if response.status_code != requests.codes.ok:
-                logging.error(f"API {response.status_code}: {response.text}")
-                return {}
-
-            curr_repos = {
-                repo["name"]: await get_repo_url(repo, ssh_host, use_ssh)
-                for repo in response.json()
-            }
-            logging.info(
-                f"Discovered {len(curr_repos)} repos in current page."
-            )
-            repo_urls = {**repo_urls, **curr_repos}
-
-            url = response.links.get("next", {}).get("url")
-            if url:
-                sleep_secs = 10
-                logging.info(
-                    f"Sleeping for {sleep_secs}s before requesting {url}."
-                )
-                await asyncio.sleep(sleep_secs)
-
-        return repo_urls
-    except Exception as e:
-        logging.error(f"Error while discovering repos: {e}.")
-        return {}
 
 
 def _update_local_clone(repo_name, repo_path, repo_url):
@@ -155,7 +71,7 @@ async def update_local_clone(repo_name, repo_path, repo_url):
 
 async def update_local_clones(repos_dir, repo_urls):
     tasks = []
-    for name, url in repo_urls.items():
+    for name, url in repo_urls:
         repo_path = os.path.join(repos_dir, name)
 
         tasks.append(update_local_clone(name, repo_path, url))
@@ -179,11 +95,6 @@ async def main():
             help="GitHub username"
         )
         parser.add_argument(
-            "-s",
-            "--ssh-host",
-            help="Custom SSH host (uses SSH instead of HTTPS for cloning repo)"
-        )
-        parser.add_argument(
             "-l",
             "--use-ssh",
             action="store_true",
@@ -201,12 +112,13 @@ async def main():
         )
         args = parser.parse_args()
 
-        repo_urls = await discover_git_repos(
-            args.visibility,
-            args.username,
-            args.ssh_host,
-            args.use_ssh
-        )
+        props = ["name", "clone_url"]
+        if args.use_ssh:
+            props = ["name", "ssh_url"]
+
+        client = GithubClient()
+        gh_repos = GithubRepos(client, args.visibility, args.username, props)
+        repo_urls = [[i[props[0]], i[props[1]]] for i in gh_repos.get()]
 
         if args.dry_run:
             logging.info("Dry run mode - discovered repo URLs:")
