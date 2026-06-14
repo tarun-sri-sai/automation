@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 from lib.encryption import read_password
 from lib.logging_util import setup_logger
-from lib.private.google.youtube.subscriptions import Subscriptions
+from lib.google.youtube.subscriptions import Subscriptions
 
 
 def init_logger():
