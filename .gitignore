@@ -19,6 +19,7 @@ dist/
 *.spec
 
 # ignore log files
+logs/
 *.log
 *.log.*
 
