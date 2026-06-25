@@ -49,6 +49,10 @@ function Write-LogMessage {
         5 { Write-Verbose $logLine }
     }
 
+    if ((-not $env:DEBUG_MODE) -and ($Level -ge 5)) {
+        return
+    }
+
     $fs = [System.IO.FileStream]::new(
         $LogPath,
         [System.IO.FileMode]::Append,
