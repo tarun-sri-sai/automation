@@ -33,7 +33,6 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "beautifulsoup4", specifier = "==4.14.2" },
     { name = "cryptography", specifier = "==48.0.1" },
     { name = "diskcache", specifier = "==5.6.3" },
     { name = "gitpython", specifier = "==3.1.50" },
