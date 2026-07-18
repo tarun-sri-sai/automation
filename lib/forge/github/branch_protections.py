@@ -96,6 +96,8 @@ class GithubBranchProtections(BranchProtections):
         ]["nodes"]
 
     def _verify_repo(self, repo):
+        logging.info(f"verifying repo '{repo}'")
+
         check_lists = {
             "**": {
                 "allowsDeletions": False,

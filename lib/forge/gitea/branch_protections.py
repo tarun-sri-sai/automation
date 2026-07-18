@@ -13,6 +13,8 @@ class GiteaBranchProtections(BranchProtections):
         return response.json()
 
     def _verify_repo(self, repo):
+        logging.info(f"verifying repo '{repo}'")
+
         check_lists = {
             "**": {
                 "priority": 1,
