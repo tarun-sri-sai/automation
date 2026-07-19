@@ -18,7 +18,7 @@ def get_totp_urls(file_path, encrypted, recipient):
         raise
 
 
-def _parse_otpauth_url(otpauth_url):
+def parse_otpauth_url(otpauth_url):
     o = urlparse(otpauth_url)
 
     # Example path: '/<Issuer>:<Username>@<Domain>'
@@ -41,7 +41,7 @@ def _parse_otpauth_url(otpauth_url):
 
 def _get_totp(totp_url, raw=False):
     try:
-        issuer, email, secret = _parse_otpauth_url(totp_url)
+        issuer, email, secret = parse_otpauth_url(totp_url)
 
         if raw:
             return issuer, email, secret

@@ -2,7 +2,7 @@ import time
 from argparse import ArgumentParser
 from rich.console import Console
 from rich.live import Live
-from lib.totp import get_totp_urls, build_table
+from lib.totp.parse import get_totp_urls, build_table
 
 
 def main():
