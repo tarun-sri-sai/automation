@@ -1,16 +1,17 @@
 import pyotp
+from pathlib import Path
 from rich.table import Table
 from urllib.parse import urlparse, parse_qs, unquote
-from lib.encryption import decrypt
+from lib.encryption.context import Context
 
 
-def get_totp_urls(file_path, encrypted, recipient):
+def get_totp_urls(file_path: Path, ctx: Context | None = None) -> list[str]:
     try:
         with open(file_path, "rb") as f:
             data = f.read()
 
-        if encrypted:
-            data = decrypt(data, recipient).decode("utf-8")
+        if ctx:
+            data = ctx.decrypt(data).decode("utf-8")
 
         return [l.strip() for l in data.split("\n") if l.strip()]
     except Exception as e:

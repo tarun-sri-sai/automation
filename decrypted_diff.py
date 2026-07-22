@@ -6,10 +6,15 @@ from git import Repo
 from git.exc import BadName
 from git.objects import Blob
 
-from lib.encryption import decrypt
+from typing import Any
+
+from lib.encryption.context import Context
+from lib.encryption.gnupg.context import GnupgContext
 
 
-def resolve_diff_commits(repo, revspec):
+def resolve_diff_commits(
+    repo: Repo, revspec: list[str]
+) -> tuple[str, str | None]:
     if len(revspec) == 2:
         return revspec[0], revspec[1]
 
@@ -30,7 +35,7 @@ def resolve_diff_commits(repo, revspec):
     raise ValueError("invalid revision specification")
 
 
-def get_file_contents(repo, commit, path):
+def get_file_contents(repo: Repo, commit: str, path: str) -> Any:
     if commit is None:
         try:
             with open(path, "rb") as f:
@@ -48,17 +53,21 @@ def get_file_contents(repo, commit, path):
     return None
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="decrypt a file at two git revisions and show unified diff"
     )
 
     parser.add_argument(
-        "-r",
-        "--recipient",
-        required=True,
+        "-e",
+        "--encryption-type",
         type=str,
-        help="recipient to use for decryption"
+        help="encryption used for the credentials"
+    )
+    parser.add_argument(
+        "--gnupg-recipient",
+        type=str,
+        help="gnupg recipient to use for decryption and encryption"
     )
 
     parser.add_argument(
@@ -74,6 +83,7 @@ def main():
     )
     parser.add_argument(
         "path",
+        type=str,
         help="Path to encrypted file"
     )
 
@@ -94,18 +104,18 @@ def main():
     encrypted_left = get_file_contents(repo, left_rev, args.path)
     encrypted_right = get_file_contents(repo, right_rev, args.path)
 
-    recipient = args.recipient
+    ctx = None
+    if args.encryption_type == "gnupg":
+        ctx = GnupgContext(args.gnupg_recipient)
+    else:
+        raise ValueError(f"unsupported encryption type {args.encryption_type}")
 
     decrypted_left = (
-        decrypt(encrypted_left, recipient).decode(
-            "utf-8"
-        ).replace("\r\n", "\n")
+        ctx.decrypt(encrypted_left).decode("utf-8").replace("\r\n", "\n")
         if encrypted_left is not None else ""
     )
     decrypted_right = (
-        decrypt(encrypted_right, recipient).decode(
-            "utf-8"
-        ).replace("\r\n", "\n")
+        ctx.decrypt(encrypted_right).decode("utf-8").replace("\r\n", "\n")
         if encrypted_right is not None else ""
     )
 

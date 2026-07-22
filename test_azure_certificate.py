@@ -1,7 +1,7 @@
 import msal
 import hashlib
 from argparse import ArgumentParser
-from lib.encryption import read_password
+from lib.encryption.core import read_password
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_certificates
 
