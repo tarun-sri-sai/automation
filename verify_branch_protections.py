@@ -21,7 +21,7 @@ def main():
         description="checks the branch protections for all repos in a forge"
     )
     parser.add_argument(
-        "forge", 
+        "forge",
         type=str,
         help="name of the forge to check branch protections for"
     )
@@ -30,7 +30,8 @@ def main():
     try:
         Factory(args.forge).build_branch_protections().verify()
     except Exception as e:
-        logging.critical(f"error verifying branch protections: {e}", exc_info=True)
+        logging.critical(
+            f"error verifying branch protections: {e}", exc_info=True)
 
 
 if __name__ == '__main__':

@@ -296,7 +296,7 @@ class Subscriptions:
             })
 
         return result
-    
+
     def _clean_text(self, text):
         text = re.sub(r"\s+", " ", text.strip())
         text = text[:77] + "..." if len(text) > 80 else text
