@@ -29,6 +29,7 @@ def _walk_credentials(
     yaml = YAML()
     yaml.default_flow_style = False
     yaml.indent(mapping=4, sequence=4, offset=4)
+    yaml.width = 2**31 - 1
 
     files = [f for f in parent_path.rglob(pattern) if f.is_file()]
     for file in files:

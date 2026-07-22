@@ -62,13 +62,13 @@ def main() -> None:
         help="gnupg recipient to use for decryption and encryption"
     )
 
+    args = parser.parse_args()
+
     ctx = None
     if args.encryption_type == "gnupg":
         ctx = GnupgContext(args.gnupg_recipient)
     else:
         raise ValueError(f"unsupported encryption type {args.encryption_type}")
-
-    args = parser.parse_args()
 
     files = find_files(args.directory, args.filter)
     for file_path in files:
