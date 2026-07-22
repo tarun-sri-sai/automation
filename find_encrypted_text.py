@@ -2,28 +2,31 @@
 import re
 import sys
 import argparse
+from collections.abc import Generator
 from pathlib import Path
-from lib.encryption import decrypt
+from lib.encryption.context import Context
+from lib.encryption.gnupg.context import GnupgContext
 
 
-def find_files(directory, extension, recursive):
-    path = Path(directory)
-    if recursive:
-        return path.rglob(f"*{extension}")
-    else:
-        return path.glob(f"*{extension}")
+def find_files(directory: Path, fil: str) -> Generator[Path, None, None]:
+    if not fil:
+        fil = "*"
+
+    return directory.rglob(fil)
 
 
-def decrypt_file(file_path, recipient):
+def decrypt_file(file_path, ctx: Context) -> str | None:
     try:
         with open(file_path, 'rb') as f:
-            return decrypt(f.read(), recipient).decode('utf-8')
+            return ctx.decrypt(f.read()).decode('utf-8')
     except Exception as e:
         print(f"Error decrypting {file_path}: {e}", file=sys.stderr)
         return None
 
 
-def search_in_content(file_path, content, pattern):
+def search_in_content(
+    file_path: Path, content: str, pattern: str
+) -> list[str]:
     matches = []
     try:
         for line in content.splitlines():
@@ -35,30 +38,45 @@ def search_in_content(file_path, content, pattern):
         return matches
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='Search for pattern in encrypted PGP files')
+
     parser.add_argument(
-        'recipient',
-        type=str,
-        help='recipient to use for decryption'
+        "directory",
+        type=Path,
+        help="directory containing credential files"
     )
-    parser.add_argument('directory', type=str, help='Directory to search')
     parser.add_argument('pattern', type=str, help='Pattern to search for')
-    parser.add_argument('-e', '--extension', default='.asc',
-                        help='File extension (default: .asc)')
-    parser.add_argument('-r', '--recurse',
-                        action='store_true', help='Search recursively')
+    parser.add_argument("-f", "--filter", help="glob pattern to match files")
+
+    parser.add_argument(
+        "-e",
+        "--encryption-type",
+        type=str,
+        help="encryption used for the credentials"
+    )
+    parser.add_argument(
+        "--gnupg-recipient",
+        type=str,
+        help="gnupg recipient to use for decryption and encryption"
+    )
+
+    ctx = None
+    if args.encryption_type == "gnupg":
+        ctx = GnupgContext(args.gnupg_recipient)
+    else:
+        raise ValueError(f"unsupported encryption type {args.encryption_type}")
 
     args = parser.parse_args()
 
-    files = find_files(args.directory, args.extension, args.recurse)
+    files = find_files(args.directory, args.filter)
     for file_path in files:
-        decrypted_content = decrypt_file(file_path, args.recipient)
-
+        decrypted_content = decrypt_file(file_path, ctx)
         if decrypted_content:
             matches = search_in_content(
-                file_path, decrypted_content, args.pattern)
+                file_path, decrypted_content, args.pattern
+            )
             for match in matches:
                 print(f"{file_path}: {match}")
 
