@@ -9,14 +9,13 @@ class GnupgContext(Context):
     def __init__(self: Self, recipient: str) -> None:
         self._recipient = recipient
 
-    
     def _is_gpg_available(self: Self) -> bool:
         if not shutil.which("gpg"):
             raise RuntimeError(
                 "gpg is not available on this system. "
                 "Please add it to PATH or install gpg"
             )
-        
+
     def _run_gpg(self: Self, args: list[str], input: bytes = None) -> bytes:
         result = subprocess.run(
             ["gpg", "--yes", *args],

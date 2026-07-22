@@ -51,7 +51,7 @@ def _create_files(ast: Document) -> None:
                 f"skipping node at index {i} because a valid h2 as not been "
                 "hit yet"
             )
-    
+
     file_names = []
     for i, split_ast in enumerate(split_asts):
         file_name = ""
@@ -68,7 +68,7 @@ def _create_files(ast: Document) -> None:
             )
 
         file_names.append(file_name)
-    
+
     renderer = MarkdownRenderer()
     for i, file_name in enumerate(file_names):
         if not file_name:

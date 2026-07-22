@@ -17,7 +17,7 @@ class GithubClient(Client):
 
     def is_authenticated(self):
         return "Authorization" in self._headers
-    
+
     def make_request(self, method, endpoint, **kwargs):
         kwargs["headers"] = {
             **self._headers,
