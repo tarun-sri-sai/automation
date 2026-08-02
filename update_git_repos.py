@@ -39,7 +39,7 @@ def _update_local_clone(repo_name, repo_path, repo_url):
         repo_obj = Repo(repo_path)
     except NoSuchPathError:
         logging.info(f"{repo_name}: Cloning repo.")
-        repo_obj = Repo.clone_from(repo_url, repo_path)
+        repo_obj = Repo.clone_from(repo_url, repo_path, recurse_submodules=True)
     except InvalidGitRepositoryError:
         logging.warning(
             f"{repo_name}: Directory {repo_path} exists but is not a repo. "
