@@ -14,10 +14,10 @@ class ProtonAuthenticatorExportV1Context(Context):
         self._ASSOCIATED_DATA = b"proton.authenticator.export.v1"
 
     def decrypt(self: Self, encrypted_blob: bytes) -> bytes:
-        json_data = json.load(encrypted_blob.decode())
+        json_data = json.loads(encrypted_blob.decode())
         salt = b64decode(json_data["salt"])
         key = hash_secret_raw(
-            secret=self._password, salt=salt, time_cost=2, 
+            secret=self._password.encode(), salt=salt, time_cost=2,
             memory_cost=19 * 1024, parallelism=1, hash_len=32, type=Type.ID
         )
 
@@ -33,7 +33,7 @@ class ProtonAuthenticatorExportV1Context(Context):
         salt = secrets.token_bytes(16)
 
         key = hash_secret_raw(
-            secret=self._password, salt=salt, time_cost=2, 
+            secret=self._password.encode(), salt=salt, time_cost=2,
             memory_cost=19 * 1024, parallelism=1, hash_len=32, type=Type.ID
         )
 
