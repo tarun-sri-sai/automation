@@ -101,7 +101,7 @@ class Subscriptions:
         return build('youtube', 'v3', credentials=self.creds)
 
     @sqlite_cache()
-    def _get(self):
+    def get(self):
         subscriptions = []
         next_page_token = None
 
@@ -160,7 +160,7 @@ class Subscriptions:
         return stats
 
     @sqlite_cache()
-    def _get_upload_playlists(self, channel_ids):
+    def get_upload_playlists(self, channel_ids):
         logging.info(
             f"fetching upload playlists for {len(channel_ids)} channels..."
         )
@@ -180,7 +180,7 @@ class Subscriptions:
         return result
 
     @sqlite_cache()
-    def _get_recent_videos(self, playlist_id, since):
+    def get_recent_videos(self, playlist_id, since):
         logging.info(f"fetching recent videos for playlist {playlist_id}...")
 
         try:
@@ -237,14 +237,14 @@ class Subscriptions:
 
         recent_videos = {}
 
-        upload_playlists = self._get_upload_playlists(channel_ids)
+        upload_playlists = self.get_upload_playlists(channel_ids)
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = []
             for channel_id in channel_ids:
                 playlist_id = upload_playlists[channel_id]
                 if playlist_id:
                     futures.append(executor.submit(
-                        self._get_recent_videos, playlist_id, since
+                        self.get_recent_videos, playlist_id, since
                     ))
 
             for future in as_completed(futures):
@@ -271,7 +271,7 @@ class Subscriptions:
         }
 
     def _get_stats(self):
-        subscriptions = self._get()
+        subscriptions = self.get()
         channel_ids = tuple(s["channel_id"] for s in subscriptions)
 
         channel_stats = self._get_channel_stats(channel_ids)
