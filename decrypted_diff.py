@@ -1,14 +1,9 @@
 import argparse
 import difflib
 import sys
-
 from git import Repo
-from git.exc import BadName
-from git.objects import Blob
-
+from pathlib import Path
 from typing import Any
-
-from lib.encryption.context import Context
 from lib.encryption.gnupg.context import GnupgContext
 
 
@@ -35,22 +30,15 @@ def resolve_diff_commits(
     raise ValueError("invalid revision specification")
 
 
-def get_file_contents(repo: Repo, commit: str, path: str) -> Any:
+def get_file_contents(repo: Repo, commit: str | None, path: str) -> Any:
+    path = Path(path).absolute().relative_to(repo.working_tree_dir).as_posix()
+
     if commit is None:
-        try:
-            with open(path, "rb") as f:
-                return f.read()
-        except FileNotFoundError:
-            return None
+        with open(Path(repo.working_tree_dir) / path, "rb") as f:
+            return f.read()
 
-    try:
-        obj = repo.commit(commit).tree / path
-        if isinstance(obj, Blob):
-            return obj.data_stream.read()
-    except (KeyError, BadName):
-        return None
-
-    return None
+    obj = repo.commit(commit).tree / path
+    return obj.data_stream.read()
 
 
 def main() -> None:
@@ -59,50 +47,43 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "-e",
-        "--encryption-type",
-        type=str,
+        "-e", "--encryption-type", type=str,
         help="encryption used for the credentials"
     )
     parser.add_argument(
-        "--gnupg-recipient",
-        type=str,
+        "--gnupg-recipient", type=str,
         help="gnupg recipient to use for decryption and encryption"
+    )
+    parser.add_argument(
+        "-p", "--path", type=str, required=True,
+        help="Path to encrypted file"
     )
 
     parser.add_argument(
-        "revisions",
-        nargs="+",
+        "revisions", nargs="+",
         help="revision spec (same formats supported by git diff)"
-    )
-    parser.add_argument(
-        "--",
-        dest="dashdash",
-        action="store_true",
-        help=argparse.SUPPRESS
-    )
-    parser.add_argument(
-        "path",
-        type=str,
-        help="Path to encrypted file"
     )
 
     args = parser.parse_args()
 
     if len(args.revisions) < 1:
-        print("fatal: must provide at least one revision spec", file=sys.stderr)
+        print(
+            "fatal: must provide at least one revision spec", file=sys.stderr
+        )
         sys.exit(1)
 
-    repo = Repo(search_parent_directories=True)
-
-    try:
-        left_rev, right_rev = resolve_diff_commits(repo, args.revisions)
-    except ValueError as e:
-        print(f"fatal: {e}", file=sys.stderr)
+    file_path = Path(args.path)
+    if not file_path.is_file():
+        print(f"fatal: {file_path} is not a file", file=sys.stderr)
         sys.exit(1)
 
-    encrypted_left = get_file_contents(repo, left_rev, args.path)
-    encrypted_right = get_file_contents(repo, right_rev, args.path)
+    repo = Repo(file_path.parent, search_parent_directories=True)
+    print(f"using git repository at {repo.working_tree_dir}", file=sys.stderr)
+
+    left_rev, right_rev = resolve_diff_commits(repo, args.revisions)
+
+    encrypted_left = get_file_contents(repo, left_rev, file_path)
+    encrypted_right = get_file_contents(repo, right_rev, file_path)
 
     ctx = None
     if args.encryption_type == "gnupg":
@@ -125,8 +106,8 @@ def main() -> None:
     diff = difflib.unified_diff(
         decrypted_left.splitlines(keepends=True),
         decrypted_right.splitlines(keepends=True),
-        fromfile=f"{args.path}@{left_label}",
-        tofile=f"{args.path}@{right_label}",
+        fromfile=f"{file_path}@{left_label}",
+        tofile=f"{file_path}@{right_label}",
     )
 
     for line in diff:
