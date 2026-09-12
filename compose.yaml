@@ -1,5 +1,5 @@
 services:
-  devenv:
+  dev:
     command: bash
     build:
       context: .
