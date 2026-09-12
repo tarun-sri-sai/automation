@@ -2,7 +2,7 @@ import pyotp
 from pathlib import Path
 from rich.table import Table
 from urllib.parse import urlparse, parse_qs, unquote
-from lib.encryption.context import Context
+from lib.encryption import Context
 
 
 def get_totp_urls(file_path: Path, ctx: Context | None = None) -> list[str]:
