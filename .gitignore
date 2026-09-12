@@ -29,3 +29,7 @@ web_cache.sqlite
 
 # ignore temp directories
 temp/
+
+# ignore environment variables
+.env*
+!.env*.example

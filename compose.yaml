@@ -1,0 +1,11 @@
+services:
+  dev:
+    command: bash
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ${PWD}:/app
+    working_dir: /app
+    env_file:
+      - .env
