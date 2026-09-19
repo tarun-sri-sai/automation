@@ -2,7 +2,7 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Self
-from lib.encryption.context import Context
+from lib.encryption import Context
 
 
 class GnupgContext(Context):

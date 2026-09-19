@@ -4,7 +4,7 @@ import sys
 from git import Repo
 from pathlib import Path
 from typing import Any
-from lib.encryption.gnupg.context import GnupgContext
+from lib.encryption import GnupgContext
 
 
 def resolve_diff_commits(

@@ -4,8 +4,7 @@ from io import StringIO
 from pathlib import Path
 from ruamel.yaml import YAML
 from typing import Any
-from lib.encryption.context import Context
-from lib.encryption.gnupg.context import GnupgContext
+from lib.encryption import Context, GnupgContext
 
 
 def _rec_sort(d: Any) -> Any:

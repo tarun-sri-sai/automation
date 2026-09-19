@@ -4,8 +4,7 @@ import sys
 import argparse
 from collections.abc import Generator
 from pathlib import Path
-from lib.encryption.context import Context
-from lib.encryption.gnupg.context import GnupgContext
+from lib.encryption import Context, GnupgContext
 
 
 def find_files(directory: Path, fil: str) -> Generator[Path, None, None]:

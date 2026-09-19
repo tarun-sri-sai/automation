@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from rich.console import Console
-from lib.encryption.gnupg.context import GnupgContext
+from lib.encryption import GnupgContext
 from lib.totp.parse import get_totp_urls, build_table
 
 
