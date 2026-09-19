@@ -1,8 +1,11 @@
+import json
 import pyotp
 from pathlib import Path
 from rich.table import Table
 from urllib.parse import urlparse, parse_qs, unquote
-from lib.encryption import Context
+from lib.encryption import (
+    Context, GnupgContext, ProtonAuthenticatorExportV1Context
+)
 
 
 def get_totp_urls(file_path: Path, ctx: Context | None = None) -> list[str]:
@@ -11,7 +14,16 @@ def get_totp_urls(file_path: Path, ctx: Context | None = None) -> list[str]:
             data = f.read()
 
         if ctx:
-            data = ctx.decrypt(data).decode("utf-8")
+            decrypted = ctx.decrypt(data).decode("utf-8")
+
+            if isinstance(ctx, GnupgContext):
+                return [l.strip() for l in decrypted.split("\n") if l.strip()]
+
+            elif isinstance(ctx, ProtonAuthenticatorExportV1Context):
+                parsed = json.loads(decrypted)
+                return [
+                    x["content"]["uri"] for x in parsed["entries"]
+                ]
 
         return [l.strip() for l in data.split("\n") if l.strip()]
     except Exception as e:
