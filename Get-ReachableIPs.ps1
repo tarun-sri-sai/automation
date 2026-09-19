@@ -1,7 +1,7 @@
 param (
     [Parameter(Mandatory = $false)]
     [string]$Subnet = "192.168.0.0/24",
-    
+
     [Parameter(Mandatory = $false)]
     [int]$ThrottleLimit = 100,
 
@@ -11,6 +11,9 @@ param (
     [Parameter(Mandatory = $false)]
     [switch]$Unreachable,
 
+    [Parameter(Mandatory = $false)]
+    [switch]$All,
+
     [int]$Port = 0,
 
     [switch]$Hostnames = $false
@@ -19,4 +22,4 @@ param (
 $thisDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
 Import-Module (Join-Path (Join-Path "$thisDirectory" "lib") "Networking.psm1")
 
-Get-Subnet -Subnet $Subnet -ThrottleLimit $ThrottleLimit -Count $Count -Unreachable:$Unreachable -Port $Port -Hostnames:$Hostnames
+Get-Subnet -Subnet $Subnet -ThrottleLimit $ThrottleLimit -Count $Count -Unreachable:$Unreachable -All:$All -Port $Port -Hostnames:$Hostnames
