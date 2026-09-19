@@ -25,6 +25,12 @@ def main():
         help="gnupg recipient to use for decryption and encryption"
     )
 
+    parser.add_argument(
+        "-r",
+        "--raw",
+        action="store_true"
+    )
+
     args = parser.parse_args()
 
     ctx = None
@@ -33,6 +39,11 @@ def main():
 
     console = Console()
     totp_urls = get_totp_urls(args.file, ctx)
+
+    if args.raw:
+        print("\n".join(totp_urls))
+        return
+
     console.print(build_table(totp_urls, raw=True))
 
 
