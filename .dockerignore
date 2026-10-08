@@ -1,0 +1,35 @@
+# ignore node packages
+node_modules/
+
+# ignore python virtual environments
+*venv*/
+
+# ignore python bytecode files
+*.pyc
+
+# ignore jupyter notebooks used for testing
+*.ipynb
+
+# ignore inputs and outputs
+data/
+
+# ignore build files
+build/
+dist/
+*.spec
+
+# ignore log files
+logs/
+*.log
+*.log.*
+
+# ignore cache files
+web_cache.sqlite
+*.pkl
+
+# ignore temp directories
+temp/
+
+# ignore environment variables
+.env*
+!.env*.example
