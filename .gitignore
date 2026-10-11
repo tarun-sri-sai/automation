@@ -25,6 +25,7 @@ logs/
 
 # ignore cache files
 web_cache.sqlite
+msft_todo_credential.json
 *.pkl
 
 # ignore temp directories
