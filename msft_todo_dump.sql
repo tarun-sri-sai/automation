@@ -2,14 +2,12 @@ PRAGMA foreign_keys=ON;
 
 CREATE TABLE IF NOT EXISTS todo_task_lists (
   id TEXT PRIMARY KEY,
-  value TEXT NOT NULL,
-  created_at INTEGER NOT NULL DEFAULT (unixepoch('now'))
+  value TEXT NOT NULL
 ) STRICT, WITHOUT ROWID;
 
 CREATE TABLE IF NOT EXISTS todo_tasks (
   id TEXT PRIMARY KEY,
-  value TEXT NOT NULL,
-  created_at INTEGER NOT NULL DEFAULT (unixepoch('now'))
+  value TEXT NOT NULL
 ) STRICT, WITHOUT ROWID;
 
 CREATE TABLE IF NOT EXISTS todo_task_list_tasks (
@@ -22,8 +20,7 @@ CREATE TABLE IF NOT EXISTS todo_task_list_tasks (
 
 CREATE TABLE IF NOT EXISTS todo_file_attachments (
   id TEXT PRIMARY KEY,
-  value TEXT NOT NULL,
-  created_at INTEGER NOT NULL DEFAULT (unixepoch('now'))
+  value TEXT NOT NULL
 ) STRICT, WITHOUT ROWID;
 
 CREATE TABLE IF NOT EXISTS todo_task_file_attachments (
@@ -36,8 +33,7 @@ CREATE TABLE IF NOT EXISTS todo_task_file_attachments (
 
 CREATE TABLE IF NOT EXISTS todo_checklist_items (
   id TEXT PRIMARY KEY,
-  value TEXT NOT NULL,
-  created_at INTEGER NOT NULL DEFAULT (unixepoch('now'))
+  value TEXT NOT NULL
 ) STRICT, WITHOUT ROWID;
 
 CREATE TABLE IF NOT EXISTS todo_task_checklist_items (
