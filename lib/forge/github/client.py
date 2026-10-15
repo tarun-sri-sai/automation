@@ -18,12 +18,15 @@ class GithubClient(Client):
     def is_authenticated(self):
         return "Authorization" in self._headers
 
-    def make_request(self, method, endpoint, **kwargs):
+    def build_url(self, endpoint):
+        return f"https://api.github.com{endpoint}"
+
+    def make_request(self, method, endpoint=None, full_url=None, **kwargs):
         kwargs["headers"] = {
             **self._headers,
             **kwargs.get("headers", {})
         }
-        url = f"https://api.github.com{endpoint}"
+        url = full_url or self.build_url(endpoint)
 
         response = requests.request(method, url, **kwargs)
         response.raise_for_status()

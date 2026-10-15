@@ -32,10 +32,12 @@ class GithubRepos(Repos):
             "X-GitHub-Api-Version": "2022-11-28"
         }
 
+        url = self._client.build_url(url)
+
         result = []
         while url:
             response = self._client.make_request(
-                "GET", url, params=params, headers=headers
+                "GET", full_url=url, params=params, headers=headers
             )
             result += [
                 {k: i.get(k) for k in self._props}
