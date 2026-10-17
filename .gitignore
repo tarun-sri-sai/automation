@@ -24,7 +24,6 @@ logs/
 *.log.*
 
 # ignore cache files
-web_cache.sqlite
 *.pkl
 
 # ignore temp directories

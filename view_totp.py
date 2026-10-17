@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from rich.console import Console
-from lib.encryption import GnupgContext
+from lib.encryption import GnupgContext, ProtonAuthenticatorExportV1Context
+from lib.encryption.core import read_password
 from lib.totp.parse import get_totp_urls, build_table
 
 
@@ -36,6 +37,11 @@ def main():
     ctx = None
     if args.encryption_type == "gnupg":
         ctx = GnupgContext(args.gnupg_recipient)
+    elif args.encryption_type == "proton_authenticator_export_v1":
+        password = read_password(
+            "enter password for proton authenticator export v1: "
+        )
+        ctx = ProtonAuthenticatorExportV1Context(password)
 
     console = Console()
     totp_urls = get_totp_urls(args.file, ctx)
