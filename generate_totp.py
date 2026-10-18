@@ -38,7 +38,7 @@ def main() -> None:
         if args.encryption_type == "gnupg":
             ctx = GnupgContext(args.gnupg_recipient)
 
-        totp_urls = get_totp_urls(args.file, ctx)
+        totp_urls = sorted(get_totp_urls(args.file, ctx))
         with Live(
             build_table(totp_urls), refresh_per_second=1, console=console
         ) as live:
