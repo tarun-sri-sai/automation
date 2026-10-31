@@ -7,8 +7,7 @@ from argparse import ArgumentParser
 
 NOTION_VERSION = "2022-06-28"
 PAGE_SIZE = 100
-RATE_LIMIT_SLEEP = 0.35
-
+RATE_LIMIT_SLEEP = 0.1
 
 blocks_seen = set()
 
@@ -22,20 +21,21 @@ class NotionClient:
             "Content-Type": "application/json",
         }
 
-    def _request(self, method, url, payload=None):
+    def _request(self, method, url, **kwargs):
         while True:
             r = requests.request(
-                method, url, headers=self._headers, json=payload
+                method, url, headers=self._headers, **kwargs
             )
             if r.status_code == 429:
+                wait_secs = int(r.headers.get("Retry-After"))
                 print(
                     (
                         f"WARN\trate limited on {url}, waiting " +
-                        f"{RATE_LIMIT_SLEEP * 10}s"
+                        f"{wait_secs}s"
                     ),
                     file=sys.stderr
                 )
-                time.sleep(RATE_LIMIT_SLEEP * 10)
+                time.sleep(wait_secs)
                 continue
 
             if r.status_code != 200:
@@ -45,7 +45,6 @@ class NotionClient:
             time.sleep(RATE_LIMIT_SLEEP)
             return r.json()
 
-
     def _search_all(self):
         results = []
         payload = {"page_size": PAGE_SIZE}
@@ -54,7 +53,7 @@ class NotionClient:
             data = self._request(
                 "POST",
                 "https://api.notion.com/v1/search",
-                payload
+                json=payload
             )
             results.extend(data["results"])
 
@@ -63,7 +62,6 @@ class NotionClient:
             payload["start_cursor"] = data["next_cursor"]
 
         return results
-
 
     def _fetch_blocks(self, block_id, prevs=None):
         prevs = (prevs or 0) + 1
@@ -74,29 +72,26 @@ class NotionClient:
             print(f"WARN\tduplicate request for {block_id}", file=sys.stderr)
 
         blocks = []
-        cursor = None
+        payload = {"page_size": PAGE_SIZE}
 
         while True:
-            url = (
-                f"https://api.notion.com/v1/blocks/{block_id}"
-                f"/children?page_size={PAGE_SIZE}"
+            data = self._request(
+                "GET",
+                f"https://api.notion.com/v1/blocks/{block_id}/children",
+                params=payload
             )
-            if cursor:
-                url += f"&start_cursor={cursor}"
 
-            data = self._request("GET", url)
             blocks.extend(data["results"])
 
             if not data.get("has_more"):
                 break
-            cursor = data["next_cursor"]
+            payload["start_cursor"] = data["next_cursor"]
 
         for block in blocks:
             if block.get("has_children"):
                 block["children"] = self._fetch_blocks(block["id"], prevs)
 
         return blocks
-
 
     def _fetch_database_rows(self, database_id):
         rows = {}
@@ -106,7 +101,7 @@ class NotionClient:
             data = self._request(
                 "POST",
                 f"https://api.notion.com/v1/databases/{database_id}/query",
-                payload,
+                json=payload,
             )
 
             for row in data["results"]:
