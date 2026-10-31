@@ -68,7 +68,7 @@ class NotionClient:
     def _fetch_blocks(self, block_id, prevs=None):
         prevs = (prevs or 0) + 1
 
-        print("    " * (prevs - 1) + " |- " + block_id)
+        print("|  " * (prevs - 1) + "`- " + block_id)
 
         if block_id in blocks_seen:
             print(f"WARN\tduplicate request for {block_id}", file=sys.stderr)
