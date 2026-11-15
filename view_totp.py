@@ -44,7 +44,7 @@ def main():
         ctx = ProtonAuthenticatorExportV1Context(password)
 
     console = Console()
-    totp_urls = get_totp_urls(args.file, ctx)
+    totp_urls = sorted(get_totp_urls(args.file, ctx))
 
     if args.raw:
         print("\n".join(totp_urls))
