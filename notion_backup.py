@@ -7,7 +7,8 @@ from argparse import ArgumentParser
 
 NOTION_VERSION = "2022-06-28"
 PAGE_SIZE = 100
-RATE_LIMIT_SLEEP = 0.1
+RATE_LIMIT_SLEEP = 30
+MAX_RETRIES = 3
 
 blocks_seen = set()
 
@@ -22,6 +23,7 @@ class NotionClient:
         }
 
     def _request(self, method, url, **kwargs):
+        retry_count = 0
         while True:
             r = requests.request(
                 method, url, headers=self._headers, **kwargs
@@ -38,11 +40,15 @@ class NotionClient:
                 time.sleep(wait_secs)
                 continue
 
-            if r.status_code != 200:
-                print(f"ERROR\t{url} response: {r.text}", file=sys.stderr)
-                sys.exit(1)
+            if not (200 <= r.status_code < 300):
+                print(f"ERROR\t[{retry_count}] {url} response: {r.text}", file=sys.stderr)
 
-            time.sleep(RATE_LIMIT_SLEEP)
+                retry_count += 1
+                if retry_count == MAX_RETRIES:
+                    sys.exit(1)
+
+                time.sleep(RATE_LIMIT_SLEEP)
+
             return r.json()
 
     def _search_all(self):
