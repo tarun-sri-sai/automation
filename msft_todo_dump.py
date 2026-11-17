@@ -28,6 +28,7 @@ from pathlib import Path
 
 import msal
 import requests
+from tqdm import tqdm
 
 # Public client flow for personal Microsoft accounts, as in msal_auth.py
 AUTHORITY = "https://login.microsoftonline.com/consumers"
@@ -39,6 +40,14 @@ DEFAULT_CACHE_FILE = "msft_todo_credential.json"
 DEFAULT_MIGRATION_FILE = Path(__file__).resolve().with_name(
     "msft_todo_dump.sql"
 )
+
+
+def _bar(iterable, **kwargs):
+    return tqdm(iterable, file=sys.stderr, disable=None, **kwargs)
+
+
+def _log(msg):
+    tqdm.write(msg, file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------
@@ -180,15 +189,14 @@ def fetch_and_store(
     }
 
     lists = graph_get_all(session, f"{GRAPH_TODO_BASE}/lists")
-    for lst in lists:
+    for lst in _bar(lists, desc="task lists", unit="list"):
         list_id = lst["id"]
         insert_entity(conn, "todo_task_lists", list_id, json_value(lst))
         stats["lists"] += 1
 
-        print(f"task list: {lst.get('displayName', '<unnamed>')} ({list_id})")
-
         TASKS_BASE = f"{GRAPH_TODO_BASE}/lists/{list_id}/tasks"
-        for task in graph_get_all(session, TASKS_BASE):
+        tasks = graph_get_all(session, TASKS_BASE)
+        for task in _bar(tasks, desc=" tasks", unit="task", leave=False):
             task_id = task["id"]
             insert_entity(conn, "todo_tasks", task_id, json_value(task))
             stats["tasks"] += 1
@@ -202,8 +210,11 @@ def fetch_and_store(
             )
             stats["list_task_links"] += cur.rowcount
 
-            for item in graph_get_all(
+            checklist_items = graph_get_all(
                 session, f"{TASKS_BASE}/{task_id}/checklistItems"
+            )
+            for item in _bar(
+                checklist_items, desc="  checklist", unit="item", leave=False
             ):
                 item_id = item["id"]
                 insert_entity(conn, "todo_checklist_items",
@@ -217,8 +228,11 @@ def fetch_and_store(
                 )
                 stats["task_checklist_links"] += cur.rowcount
 
-            for attachment in graph_get_all(
+            attachments = graph_get_all(
                 session, f"{TASKS_BASE}/{task_id}/attachments"
+            )
+            for attachment in _bar(
+                attachments, desc="  attachments", unit="file", leave=False
             ):
                 attachment_id = attachment["id"]
                 insert_entity(conn, "todo_file_attachments",
@@ -318,6 +332,7 @@ def main(argv: list | None = None) -> None:
 
     # --- dump the in-memory DB to the output file ---
     output_path = Path(args.output)
+    _log(f"writing dump to {output_path}...")
     dump_database(conn, output_path)
 
     print(
