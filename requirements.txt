@@ -22,5 +22,6 @@ requests-cache==1.2.1
 rich==14.3.2
 ruamel-yaml==0.17.26
 scikit-learn==1.7.2
+tqdm==4.70.1
 validators==0.35.0
 whoosh==2.7.4
