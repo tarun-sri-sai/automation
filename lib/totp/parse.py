@@ -2,7 +2,7 @@ import json
 import pyotp
 from pathlib import Path
 from rich.table import Table
-from urllib.parse import urlparse, parse_qs, unquote
+from urllib.parse import urlparse, parse_qs, quote, unquote, urlsplit
 from lib.encryption import (
     Context, GnupgContext, ProtonAuthenticatorExportV1Context
 )
@@ -12,7 +12,9 @@ def unplus(string: str) -> str:
     return string.replace('+', '')
 
 
-def get_totp_urls(file_path: Path, ctx: Context | None = None) -> list[str]:
+def _extract_totp_urls(
+    file_path: Path, ctx: Context | None = None
+) -> list[str]:
     try:
         with open(file_path, "rb") as f:
             data = f.read()
@@ -36,6 +38,26 @@ def get_totp_urls(file_path: Path, ctx: Context | None = None) -> list[str]:
     except Exception as e:
         print(f"Error while decrypting TOTP urls from {file_path}: {e}")
         raise
+
+
+def _add_issuer_to_path(url: str, issuer: str | None, email: str) -> str:
+    url_split_ctx = urlsplit(url)
+    quoted_issuer = quote(issuer, safe="") if issuer else None
+    quoted_email = quote(email, safe="")
+
+    updated_path = (
+        f"/{quoted_issuer}:{quoted_email}" if issuer else f"/{quoted_email}"
+    )
+    return url_split_ctx._replace(path=updated_path).geturl()
+
+
+def get_totp_urls(file_path: Path, ctx: Context | None = None) -> list[str]:
+    raw_urls = _extract_totp_urls(file_path, ctx)
+
+    return [
+        _add_issuer_to_path(url, *parse_otpauth_url(url)[:2])
+        for url in raw_urls
+    ]
 
 
 def parse_otpauth_url(otpauth_url):
