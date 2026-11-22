@@ -2,17 +2,19 @@ import json
 import pyotp
 from pathlib import Path
 from rich.table import Table
-from urllib.parse import urlparse, parse_qs, unquote
+from urllib.parse import urlparse, parse_qs, unquote, urlsplit
 from lib.encryption import (
     Context, GnupgContext, ProtonAuthenticatorExportV1Context
 )
 
 
-def unplus(string: str) -> str:
+def _unplus(string: str) -> str:
     return string.replace('+', '')
 
 
-def get_totp_urls(file_path: Path, ctx: Context | None = None) -> list[str]:
+def _extract_totp_urls(
+        file_path: Path, ctx: Context | None = None
+    ) -> list[str]:
     try:
         with open(file_path, "rb") as f:
             data = f.read()
@@ -22,21 +24,36 @@ def get_totp_urls(file_path: Path, ctx: Context | None = None) -> list[str]:
 
             if isinstance(ctx, GnupgContext):
                 return [
-                    unplus(l.strip())
+                    _unplus(l.strip())
                     for l in decrypted.split("\n") if l.strip()
                 ]
 
             elif isinstance(ctx, ProtonAuthenticatorExportV1Context):
                 parsed = json.loads(decrypted)
                 return [
-                    unplus(x["content"]["uri"]) for x in parsed["entries"]
+                    _unplus(x["content"]["uri"]) for x in parsed["entries"]
                 ]
 
-        return [unplus(l.strip()) for l in data.split("\n") if l.strip()]
+        return [_unplus(l.strip()) for l in data.split("\n") if l.strip()]
     except Exception as e:
         print(f"Error while decrypting TOTP urls from {file_path}: {e}")
         raise
 
+
+def _add_issuer_to_path(url: str, issuer: str | None, email: str) -> str:
+    url_split_ctx = urlsplit(url)
+
+    return url_split_ctx._replace(path=(
+        f'/totp/{f"/{issuer}:{email}" if issuer else f"/{email}"}'
+    )).geturl()
+
+def get_totp_urls(file_path: Path, ctx: Context | None = None) -> list[str]:
+    raw_urls = _extract_totp_urls(file_path, ctx)
+
+    return [
+        _add_issuer_to_path(url, *parse_otpauth_url(url)[:2])
+        for url in raw_urls
+    ]
 
 def parse_otpauth_url(otpauth_url):
     o = urlparse(otpauth_url)
