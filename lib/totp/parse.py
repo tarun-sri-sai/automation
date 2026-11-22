@@ -42,8 +42,8 @@ def _extract_totp_urls(
 
 def _add_issuer_to_path(url: str, issuer: str | None, email: str) -> str:
     url_split_ctx = urlsplit(url)
-    quoted_issuer = quote(issuer) if issuer else None
-    quoted_email = quote(email)
+    quoted_issuer = quote(issuer, safe="") if issuer else None
+    quoted_email = quote(email, safe="")
 
     updated_path = (
         f"/{quoted_issuer}:{quoted_email}" if issuer else f"/{quoted_email}"
