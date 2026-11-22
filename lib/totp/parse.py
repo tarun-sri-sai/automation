@@ -8,7 +8,7 @@ from lib.encryption import (
 )
 
 
-def _unplus(string: str) -> str:
+def unplus(string: str) -> str:
     return string.replace('+', '')
 
 
@@ -24,17 +24,17 @@ def _extract_totp_urls(
 
             if isinstance(ctx, GnupgContext):
                 return [
-                    _unplus(l.strip())
+                    unplus(l.strip())
                     for l in decrypted.split("\n") if l.strip()
                 ]
 
             elif isinstance(ctx, ProtonAuthenticatorExportV1Context):
                 parsed = json.loads(decrypted)
                 return [
-                    _unplus(x["content"]["uri"]) for x in parsed["entries"]
+                    unplus(x["content"]["uri"]) for x in parsed["entries"]
                 ]
 
-        return [_unplus(l.strip()) for l in data.split("\n") if l.strip()]
+        return [unplus(l.strip()) for l in data.split("\n") if l.strip()]
     except Exception as e:
         print(f"Error while decrypting TOTP urls from {file_path}: {e}")
         raise
